@@ -44,6 +44,7 @@ $app->post("/login/", function($req, $res, $args) {
 });
 
 $app->post("/save_retos/", function($req, $res, $args) {
+    $id_reto = $req->getParam('id_reto');
     $uretador = $req->getParam('user_retador');
     $unidadId = $req->getParam('unidad_id');
     $courseId = $req->getParam('courseId');
@@ -51,7 +52,7 @@ $app->post("/save_retos/", function($req, $res, $args) {
     $idTemageneral = $req->getParam('id_temageneral');
     $fecha_inicio = date('Y-m-d H:i:s');
 
-    $id = saveRetos($uretador, $unidadId, $courseId, $uretado, $idTemageneral, $fecha_inicio);
+    $id = saveRetos($id_reto, $uretador, $unidadId, $courseId, $uretado, $idTemageneral, $fecha_inicio);
 });
 
 $app->post("/update_retos/", function($req, $res, $args) {
@@ -73,9 +74,8 @@ function getRetos($user) {
     $getDB = new accdb();
 
     $sqlRetosEnviados = "SELECT r.id_reto, r.usuario_retador, r.unidad_id, r.curso_id, r.id_temageneral, r.fecha_inicio_reto, 
-            r.usuario_retado, u.nikname, r.jugado, 
-            time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) 
-            as para_ganar from g_reto r, g_usuario u where r.usuario_retado = u.username 
+            r.usuario_retado, u.nikname, r.jugado, time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), 
+            concat('%H', 'h', ':', '%i', 'm')) as para_ganar from g_reto r, g_usuario u where r.usuario_retado = u.username 
             and r.usuario_retador = '{$user}' and r.jugado = 0";
 
     $sqlRetosRecibidos = "SELECT  r.id_reto, r.usuario_retador, u.nikname, r.unidad_id, r.curso_id, r.id_temageneral,
@@ -83,9 +83,12 @@ function getRetos($user) {
             interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as para_perder from g_reto r, 
             g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 0";
 
-    $sqlRetosHistorial = "SELECT  r.id_reto, r.usuario_retado, u.nikname, r.unidad_id, r.curso_id, r.id_temageneral, 
-        r.fecha_inicio_reto, r.jugado, if(puntaje_retador > puntaje_retado, 'Has ganado', 'Has perdido') resultado 
-        from g_reto r, g_usuario u where r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 1";
+    $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, 'reto enviado', 
+        if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from 
+        g_reto r, g_usuario u where r.usuario_retado = u.username and r.usuario_retador = '{$user}' 
+        and r.jugado = 1 union select r.id_reto, r.usuario_retador as usuario, u.nikname, 'reto recibido', 
+        if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario 
+        u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 order by id_reto";
 
 
     $json->Enviado = $getDB->dataSet($sqlRetosEnviados);
@@ -175,15 +178,17 @@ function getUsers($page, $recs, $username, $keywords) {
     echo json_encode($query);
 }
 
-function saveRetos($uretador, $unidadId, $courseId, $uretado, $idTemageneral, $fecha_inicio) {
+function saveRetos($id_reto, $uretador, $unidadId, $courseId, $uretado, $idTemageneral, $fecha_inicio) {
     $getDB = new accdb();
 
-    $sqlInsert = "INSERT INTO  g_reto (usuario_retador, unidad_id, curso_id, id_temageneral, fecha_inicio_reto, usuario_retado) 
+    if($id_reto == "") {
+        $sqlInsert = "INSERT INTO  g_reto (usuario_retador, unidad_id, curso_id, id_temageneral, fecha_inicio_reto, usuario_retado) 
                 VALUES ('{$uretador}', '{$unidadId}', '{$courseId}', '{$idTemageneral}', '{$fecha_inicio}', '{$uretado}')";
 
-    $insertId = $getDB->InsertAndGetLastId($sqlInsert);
+        $insertId = $getDB->InsertAndGetLastId($sqlInsert);
 
-    echo $insertId;
+        echo $insertId;
+    }
 }
 
 function updateDate($id, $fecha_inicio) {
@@ -237,9 +242,7 @@ function updateRetos($ujugador, $countCorrect, $idQuestion, $fecha_fin) {
             } else {
                 $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '1', puntaje_retado = '5' where id_reto = '{$idQuestion}'";
             }
-        }
-
-        if ($puntajeRetador > $puntajeRetado) {
+        } else if($puntajeRetador > $puntajeRetado) {
             $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '5', puntaje_retado = '1' where id_reto = '{$idQuestion}'";
         } else {
             $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '1', puntaje_retado = '5' where id_reto = '{$idQuestion}'";
