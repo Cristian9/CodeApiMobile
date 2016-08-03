@@ -231,7 +231,15 @@ function updateRetos($ujugador, $countCorrect, $idQuestion, $fecha_fin) {
         $puntajeRetado = $queryRate[0]['correctas_retado'];
         $tiempoRetado = $queryRate[0]['tiempo_retado'];
 
-        if ($puntajeRetador > $puntajeRetado || $tiempoRetador < $tiempoRetado) {
+        if ($puntajeRetador == $puntajeRetado) {
+            if ($tiempoRetador < $tiempoRetado) {
+                $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '5', puntaje_retado = '1' where id_reto = '{$idQuestion}'";
+            } else {
+                $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '1', puntaje_retado = '5' where id_reto = '{$idQuestion}'";
+            }
+        }
+
+        if ($puntajeRetador > $puntajeRetado) {
             $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '5', puntaje_retado = '1' where id_reto = '{$idQuestion}'";
         } else {
             $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '1', puntaje_retado = '5' where id_reto = '{$idQuestion}'";
