@@ -83,9 +83,9 @@ function getRetos($user) {
             interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as para_perder from g_reto r, 
             g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 0";
 
-    $sqlRetosHistorial = "SELECT  r.id_reto, r.usuario_retador, u.nikname, r.unidad_id, r.curso_id, 
-            r.fecha_inicio_reto, r.usuario_retado, r.jugado from g_reto r, 
-            g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1";
+    $sqlRetosHistorial = "SELECT  r.id_reto, r.usuario_retado, u.nikname, r.unidad_id, r.curso_id, r.id_temageneral, 
+        r.fecha_inicio_reto, r.jugado, if(puntaje_retador > puntaje_retado, 'Has ganado', 'Has perdido') resultado 
+        from g_reto r, g_usuario u where r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 1";
 
 
     $json->Enviado = $getDB->dataSet($sqlRetosEnviados);
