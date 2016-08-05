@@ -36,6 +36,10 @@ $app->get("/getResultQuestion/", function($req, $res, $args) {
     getResultQuestion($req->getParam('question_id'));
 });
 
+$app->get("/get_resumen_juego/", function($req, $res, $args){
+    getResumenJuego($req->getParam('id'), $req->getParam('uid'));
+});
+
 $app->post("/login/", function($req, $res, $args) {
     $user = $req->getParam('user');
     $pass = $req->getParam('pass');
@@ -100,19 +104,32 @@ function getRetos($user, $get, $id) {
         $sqlDetalle = "SELECT r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, r.usuario_retado as 
             rival, u.nikname, 'Enviado' as origen, if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado, 
             r.puntaje_retador as mi_punto, r.puntaje_retado as punto_rival, time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), 
-            concat('%i', 'm:', '%s', 's')) as miTiempo, time_format(timediff(r.fecha_fin_juego, r.fecha_inicio_juego), 
-            concat('%i', 'm:', '%s', 's')) as tiempoRival from g_reto r, g_usuario u where r.usuario_retado = u.username and 
+            concat('%i', 'm ', '%s', 's')) as miTiempo, time_format(timediff(r.fecha_fin_juego, r.fecha_inicio_juego), 
+            concat('%i', 'm ', '%s', 's')) as tiempoRival from g_reto r, g_usuario u where r.usuario_retado = u.username and 
             r.usuario_retador = '{$user}' and r.jugado = 1  and r.id_reto = {$id}
             union
             select r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, r.usuario_retador as rival, u.nikname, 
             'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado, r.puntaje_retado as 
-            mi_punto, r.puntaje_retador as punto_rival, time_format(timediff(r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm:', '%s', 's')) 
-            as miTiempo, time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), concat('%i', 'm:', '%s', 's')) as tiempoRival from 
+            mi_punto, r.puntaje_retador as punto_rival, time_format(timediff(r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) 
+            as miTiempo, time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as tiempoRival from 
             g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 and r.id_reto = {$id} 
             order by id_reto";
 
         $json->Detalle = $getDB->dataSet($sqlDetalle);
     }
+
+    echo json_encode($json);
+}
+
+function getResumenJuego($id, $uid) {
+    $getDB = new accdb();
+
+    $sql = "SELECT (select nikname from g_usuario where username = '{$uid}') as myNik, u.nikname as nikRival, r.correctas_retador, 
+        time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), concat('%im ', '%ss')) as tiempo_juego, time_format(timediff
+        (r.fecha_inicio_reto + interval 1 day, now()), concat('%Hh ', '%im')) as para_ganar from g_reto r, g_usuario u where 
+        r.usuario_retado = u.username and r.usuario_retador = '{$uid}' and r.jugado = 0 and r.id_reto = {$id}";
+
+    $json->Resumen = $getDB->dataSet($sql);
 
     echo json_encode($json);
 }
