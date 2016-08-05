@@ -125,9 +125,11 @@ function getResumenJuego($id, $uid) {
     $getDB = new accdb();
 
     $sql = "SELECT (select nikname from g_usuario where username = '{$uid}') as myNik, u.nikname as nikRival, r.correctas_retador, 
-        time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), concat('%im ', '%ss')) as tiempo_juego, time_format(timediff
-        (r.fecha_inicio_reto + interval 1 day, now()), concat('%Hh ', '%im')) as para_ganar from g_reto r, g_usuario u where 
-        r.usuario_retado = u.username and r.usuario_retador = '{$uid}' and r.jugado = 0 and r.id_reto = {$id}";
+        if(r.correctas_retado = 0, '', r.correctas_retado) as correctas_retado, time_format(timediff(r.fecha_fin_reto, 
+        r.fecha_inicio_reto), concat('%im ', '%ss')) as tiempo_juego_retador, if(r.jugado <> 0, time_format(timediff(r.fecha_fin_juego, 
+        r.fecha_inicio_juego), concat('%im ', '%ss')), 'Pendiente') as tiempo_juego_retado, if(r.jugado = 0, time_format(timediff
+        (r.fecha_inicio_reto + interval 1 day, now()), concat('Faltan %Hh ', '%im para ganar')), 'Juego Finalizado') as para_ganar 
+        from g_reto r, g_usuario u where r.usuario_retado = u.username and r.id_reto = {$id}";
 
     $json->Resumen = $getDB->dataSet($sql);
 
