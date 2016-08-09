@@ -79,6 +79,10 @@ function getRetos($user, $get, $id) {
 
     if ($get == "all") {
 
+        /********* Verifica si algún reto, enviado o recibido ha vencido ****/
+        verificarRetoFueraFecha($user);
+        /*****************************************/
+
         $sqlRetosEnviados = "SELECT r.id_reto, r.usuario_retador, r.unidad_id, r.curso_id, r.id_temageneral, r.fecha_inicio_reto, 
             r.usuario_retado, u.nikname, r.jugado, time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), 
             concat('%H', 'h', ':', '%i', 'm')) as para_ganar from g_reto r, g_usuario u where r.usuario_retado = u.username 
@@ -118,9 +122,37 @@ function getRetos($user, $get, $id) {
             order by id_reto";
 
         $json->Detalle = $getDB->dataSet($sqlDetalle);
+
+
     }
 
     echo json_encode($json);
+}
+
+function verificarRetoFueraFecha($user) {
+    $getDB = new accdb();
+    $sqlVerifica = "SELECT r.id_reto, r.correctas_retador as correctas, if((time_to_sec(r.fecha_inicio_reto + interval 1 day) - 
+        time_to_sec(now())) <= 0, 'yes', 'not') as actualizar from g_reto r, g_usuario u where r.usuario_retado = u.username and 
+        r.usuario_retador = '{$user}' and r.jugado = 0
+        union
+        select r.id_reto, r.correctas_retador as correctas, if((time_to_sec(r.fecha_inicio_reto + interval 1 day) - 
+        time_to_sec(now())) <= 0, 'yes', 'not') as actualizar from g_reto r, g_usuario u where r.usuario_retador = u.username 
+        and r.usuario_retado = '{$user}' and r.jugado = 0";
+
+    $queryVerifica = $getDB->dataSet($sqlVerifica);
+    
+    for ($i = 0; $i < count($queryVerifica); $i++) {
+        if ($queryVerifica[$i]['actualizar'] == "yes") {
+
+            $idreto = $queryVerifica[$i]['id_reto'];
+            $punto_retador = ($queryVerifica[$i]['correctas'] >= 1) ? 5 : 0;
+
+            $sqlUpdate = "UPDATE g_reto set puntaje_retador = '{$punto_retador}', fecha_inicio_juego = now(), fecha_fin_juego = 
+                now(), correctas_retado = '0', puntaje_retado = '0', jugado = 1 where id_reto = '{$idreto}'";
+
+            $getDB->execQuery($sqlUpdate);
+        }
+    }
 }
 
 function getResumenJuego($id, $uid) {
