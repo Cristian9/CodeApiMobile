@@ -138,11 +138,11 @@ function getRetos($user, $get, $id) {
 
 function verificarRetoFueraFecha($user) {
     $getDB = new accdb();
-    $sqlVerifica = "SELECT id_reto, correctas_retador as correctas, if((time_to_sec(fecha_inicio_reto + interval 1 day) - 
-        time_to_sec(now())) <= 0, 'yes', 'not') as actualizar from g_reto where usuario_retador = '{$user}' and jugado = 0
+    $sqlVerifica = "SELECT id_reto, correctas_retador as correctas, if(unix_timestamp(fecha_inicio_reto + interval 1 day) - 
+        unix_timestamp(now()) <= 0, 'yes', 'not') as actualizar from g_reto where usuario_retador = '{$user}' and jugado = 0
         union
-        select id_reto, correctas_retador as correctas, if((time_to_sec(fecha_inicio_reto + interval 1 day) - 
-        time_to_sec(now())) <= 0, 'yes', 'not') as actualizar from g_reto where usuario_retado = '{$user}' and jugado = 0";
+        select id_reto, correctas_retador as correctas, if(unix_timestamp(fecha_inicio_reto + interval 1 day) - 
+        unix_timestamp(now()) <= 0, 'yes', 'not') as actualizar from g_reto where usuario_retado = '{$user}' and jugado = 0";
 
     $queryVerifica = $getDB->dataSet($sqlVerifica);
     
