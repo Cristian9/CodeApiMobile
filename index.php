@@ -32,8 +32,15 @@ $app->get("/getQuestions/", function($req, $res, $args) {
     getQuestions($req->getParam('course'), $req->getParam('unidad'));
 });
 
-$app->get("/getResultQuestion/", function($req, $res, $args) {
-    getResultQuestion($req->getParam('question_id'));
+$app->post("/save_selected_rpta/", function($req, $res, $args) {
+    setSelectedRespuesta(
+            $user           = $req->getParam('username'),
+            $courseid       = $req->getParam('courseid'),
+            $unidadid       = $req->getParam('unidadid'),
+            $temageneralid  = $req->getParam('generalt'),
+            $preguntaid     = $req->getParam('pregunta'),
+            $respuestaid    = $req->getParam('respuest')
+        );
 });
 
 $app->get("/get_resumen_juego/", function($req, $res, $args){
@@ -79,7 +86,7 @@ function getRetos($user, $get, $id) {
 
     if ($get == "all") {
 
-        /********* Verifica si algún reto, enviado o recibido ha vencido ****/
+        /********* Verifica si algún reto, enviado o recibido esta fuera de fecha ****/
         verificarRetoFueraFecha($user);
         /*****************************************/
 
@@ -131,13 +138,11 @@ function getRetos($user, $get, $id) {
 
 function verificarRetoFueraFecha($user) {
     $getDB = new accdb();
-    $sqlVerifica = "SELECT r.id_reto, r.correctas_retador as correctas, if((time_to_sec(r.fecha_inicio_reto + interval 1 day) - 
-        time_to_sec(now())) <= 0, 'yes', 'not') as actualizar from g_reto r, g_usuario u where r.usuario_retado = u.username and 
-        r.usuario_retador = '{$user}' and r.jugado = 0
+    $sqlVerifica = "SELECT id_reto, correctas_retador as correctas, if((time_to_sec(fecha_inicio_reto + interval 1 day) - 
+        time_to_sec(now())) <= 0, 'yes', 'not') as actualizar from g_reto where usuario_retador = '{$user}' and jugado = 0
         union
-        select r.id_reto, r.correctas_retador as correctas, if((time_to_sec(r.fecha_inicio_reto + interval 1 day) - 
-        time_to_sec(now())) <= 0, 'yes', 'not') as actualizar from g_reto r, g_usuario u where r.usuario_retador = u.username 
-        and r.usuario_retado = '{$user}' and r.jugado = 0";
+        select id_reto, correctas_retador as correctas, if((time_to_sec(fecha_inicio_reto + interval 1 day) - 
+        time_to_sec(now())) <= 0, 'yes', 'not') as actualizar from g_reto where usuario_retado = '{$user}' and jugado = 0";
 
     $queryVerifica = $getDB->dataSet($sqlVerifica);
     
@@ -322,6 +327,14 @@ function updateRetos($ujugador, $countCorrect, $idQuestion, $fecha_fin) {
 
         $updReto = $getDB->execQuery($sqlUpdatePuntos);
     }
+}
+
+function setSelectedRespuesta($username, $courseid, $unidadid, $generalt, $pregunta, $respuest) {
+    $getDB = new accdb();
+    $sql = "INSERT INTO g_respuesta_usuario (username, course_id, unidad_id, id_temageneral, pregunta_id, respuesta_id)
+        values ('{$username}', '{$courseid}', '{$unidadid}', '{$generalt}', '{$pregunta}', '{$respuest}')";
+
+    $getDB->execQuery($sql);
 }
 
 function login($uname, $pass) {
