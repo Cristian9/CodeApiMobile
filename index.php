@@ -79,7 +79,29 @@ $app->post("/updateDateReto/", function($req, $res, $args) {
     updateDate($req->getParam('idReto'), date('Y-m-d H:i:s'));
 });
 
+$app->get("/get_profile/", function($req, $res, $args){
+    get_profile($req->getParam('username'));
+});
+
 $app->run();
+
+function get_profile($username) {
+    $getDB = new accdb();
+    $sqlGanados = "SELECT count(id_reto) as ganado from g_reto where (usuario_retador = 'ctapia' and puntaje_retador > 1) 
+        or (usuario_retado = 'ctapia' and  puntaje_retado > 1)";
+
+    $sqlPerdidos = "SELECT count(id_reto) as perdido from g_reto where (usuario_retador = 'ctapia' and puntaje_retador <= 1)
+        or (usuario_retado = 'ctapia' and  puntaje_retado <= 1)";
+
+    $sqlPuntaje = "SELECT (select sum(puntaje_retador) from g_reto where usuario_retador = 'ctapia') + (select sum(puntaje_retado) 
+        from g_reto where usuario_retado = 'ctapia') as total";
+
+    $json->Ganados = $getDB->dataSet($sqlGanados);
+    $json->Perdidos = $getDB->dataSet($sqlPerdidos);
+    $json->Puntaje = $getDB->dataSet($sqlPuntaje);
+
+    echo json_encode($json);
+}
 
 function getRetos($user, $get, $id) {
     $getDB = new accdb();
@@ -340,7 +362,7 @@ function setSelectedRespuesta($username, $courseid, $unidadid, $generalt, $pregu
 function login($uname, $pass) {
     $getDB = new accdb();
     $sha1pass = sha1($pass);
-    $sqlUser = "SELECT usuario_id, firstname, lastname, username, email 
+    $sqlUser = "SELECT usuario_id, firstname, lastname, username, nikname, email 
         FROM g_usuario WHERE username = '{$uname}' and password = '{$sha1pass}'";
 
     //$wsUrl = 'http://10.31.1.223:8051/ServiceAD.asmx?WSDL';
