@@ -34,6 +34,7 @@ $app->get("/getQuestions/", function($req, $res, $args) {
 
 $app->post("/save_selected_rpta/", function($req, $res, $args) {
     setSelectedRespuesta(
+            $idreto         = $req->getParam('reto_id'),
             $user           = $req->getParam('username'),
             $courseid       = $req->getParam('courseid'),
             $unidadid       = $req->getParam('unidadid'),
@@ -83,6 +84,10 @@ $app->get("/get_profile/", function($req, $res, $args){
     get_profile($req->getParam('username'));
 });
 
+$app->post("/change_nick/", function($req, $res, $args){
+    changeNick($req->getParam('userid'), $req->getParam('niknam'));
+});
+
 $app->run();
 
 function get_profile($username) {
@@ -101,6 +106,12 @@ function get_profile($username) {
     $json->Puntaje = $getDB->dataSet($sqlPuntaje);
 
     echo json_encode($json);
+}
+
+function changeNick($userid, $nik) {
+    $getDB = new accdb();
+    $sql = "UPDATE g_usuario set nikname = '{$nik}' where usuario_id = '{$userid}'";
+    echo $getDB->execQuery($sql);
 }
 
 function getRetos($user, $get, $id) {
@@ -351,10 +362,10 @@ function updateRetos($ujugador, $countCorrect, $idQuestion, $fecha_fin) {
     }
 }
 
-function setSelectedRespuesta($username, $courseid, $unidadid, $generalt, $pregunta, $respuest) {
+function setSelectedRespuesta($idreto, $username, $courseid, $unidadid, $generalt, $pregunta, $respuest) {
     $getDB = new accdb();
-    $sql = "INSERT INTO g_respuesta_usuario (username, course_id, unidad_id, id_temageneral, pregunta_id, respuesta_id)
-        values ('{$username}', '{$courseid}', '{$unidadid}', '{$generalt}', '{$pregunta}', '{$respuest}')";
+    $sql = "INSERT INTO g_respuesta_usuario (username, course_id, unidad_id, id_temageneral, pregunta_id, respuesta_id, id_reto)
+        values ('{$username}', '{$courseid}', '{$unidadid}', '{$generalt}', '{$pregunta}', '{$respuest}', '{$idreto}')";
 
     $getDB->execQuery($sql);
 }
