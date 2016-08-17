@@ -71,9 +71,10 @@ $app->post("/update_retos/", function($req, $res, $args) {
     $ujugador = $req->getParam('username');
     $countCorrect = $req->getParam('countCorrect');
     $idQuestion = $req->getParam('idQuestion');
+    $cancelled = $req->getParam('cancelled');
     $fecha_fin = date('Y-m-d H:i:s');
 
-    updateRetos($ujugador, $countCorrect, $idQuestion, $fecha_fin);
+    updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_fin);
 });
 
 $app->post("/updateDateReto/", function($req, $res, $args) {
@@ -88,7 +89,69 @@ $app->post("/change_nick/", function($req, $res, $args){
     changeNick($req->getParam('userid'), $req->getParam('niknam'));
 });
 
+$app->post("/registerDevice/", function($req, $res, $args){
+    registerDevice($req->getParam('userid'), $req->getParam('identifier'));
+});
+
+$app->post("/sendNotification/", function($req, $res, $args){
+    sendPushNotification($req->getParam('toUser'), $req->getParam('fromUser'));
+});
+
 $app->run();
+
+function sendPushNotification($toUser, $fromUser) {
+    $getDB = new accdb();
+
+    define( 'API_ACCESS_KEY', 'AIzaSyCCa1aOXTCBK6an2exmaI6MEPjwqFRt-Hc');
+
+    $sqlUser = "SELECT firstname, device_notification_id from g_usuario where username = '{$toUser}'";
+
+    $keyDevice = $getDB->dataSet($sqlUser);
+
+    $key = $keyDevice[0]['device_notification_id'];
+    $username = $keyDevice[0]['firstname'];
+
+    $to = $key;
+    $title = "Tienes un nuevo reto de {$fromUser} !!!";
+    $message = "{$username}, un nuevo retador te ha desafiado";
+
+    $registrationId = array($to);
+    $msg = array(
+        'message' => $message,
+        'title' => $title,
+        'vibrate' => 1,
+        'sound' => 1
+    );
+
+    $fields = array(
+        'registration_ids' => $registrationId,
+        'data' => $msg
+    );
+
+    $headers = array(
+        'Authorization: key=' . API_ACCESS_KEY,
+        'Content-Type: application/json'
+    );
+
+    $ch = curl_init();
+    curl_setopt( $ch,CURLOPT_URL, 'https://android.googleapis.com/gcm/send' );
+    curl_setopt( $ch,CURLOPT_POST, true );
+    curl_setopt( $ch,CURLOPT_HTTPHEADER, $headers );
+    curl_setopt( $ch,CURLOPT_RETURNTRANSFER, true );
+    curl_setopt( $ch,CURLOPT_SSL_VERIFYPEER, false );
+    curl_setopt( $ch,CURLOPT_POSTFIELDS, json_encode( $fields ) );
+    $result = curl_exec($ch );
+    curl_close( $ch );
+    echo $result;
+}
+
+function registerDevice($userid, $identifier) {
+    $getDB = new accdb();
+
+    $sql = "UPDATE g_usuario set device_notification_id = '{$identifier}' where usuario_id = '{$userid}'";
+
+    echo $getDB->execQuery($sql);
+}
 
 function get_profile($username) {
     $getDB = new accdb();
@@ -137,7 +200,7 @@ function getRetos($user, $get, $id) {
             r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where r.usuario_retado = u.username 
             and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador as usuario, 
             u.nikname, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado 
-            from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 order by id_reto";
+            from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 order by id_reto desc";
 
         $json->Enviado = $getDB->dataSet($sqlRetosEnviados);
         $json->Recibido = $getDB->dataSet($sqlRetosRecibidos);
@@ -278,7 +341,7 @@ function getUsers($page, $recs, $username, $keywords) {
         $limit = ($page - 1) * $recs;
     }
 
-    $sql = "SELECT nikname as usuario, username 
+    $sql = "SELECT concat(firstname, ' ', lastname) as uname, nikname as usuario, username 
         from g_usuario where username <> '{$username}' and (lastname like '%{$keywords}%' 
         or firstname like '%{$keywords}%' or nikname like '%{$keywords}%') order by 
         usuario_id LIMIT {$limit}, {$recs}";
@@ -307,58 +370,68 @@ function updateDate($id, $fecha_inicio) {
     $updReto = $getDB->execQuery($sqlUpdate);
 }
 
-function updateRetos($ujugador, $countCorrect, $idQuestion, $fecha_fin) {
+function updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_fin) {
 
     $getDB = new accdb();
 
-    $sqlGetRecord = "SELECT * FROM g_reto where id_reto = '{$idQuestion}'";
+    if($cancelled == "") {
 
-    $queryRecord = $getDB->dataSet($sqlGetRecord);
+        $sqlGetRecord = "SELECT * FROM g_reto where id_reto = '{$idQuestion}'";
 
-    $uRetador = $queryRecord[0]['usuario_retador'];
-    $uRetado = $queryRecord[0]['usuario_retado'];
+        $queryRecord = $getDB->dataSet($sqlGetRecord);
 
-
-    $sqlUpdate = "UPDATE g_reto SET correctas_retador = '{$countCorrect}', 
-        fecha_fin_reto = '{$fecha_fin}' where id_reto = '{$idQuestion}'";
-
-    if ($uRetado == $ujugador) {
-        $sqlUpdate = "UPDATE g_reto SET correctas_retado = '{$countCorrect}', 
-            fecha_fin_juego = '{$fecha_fin}', jugado = 1 where id_reto = '{$idQuestion}'";
-    }
-
-    $updReto = $getDB->execQuery($sqlUpdate);
-
-    if ($updReto && $uRetado == $ujugador) {
-
-        $queryRecordRate = "SELECT timediff(fecha_fin_reto, fecha_inicio_reto)
-            as tiempo_retador, correctas_retador, timediff(fecha_fin_juego, fecha_inicio_juego) 
-            as tiempo_retado, correctas_retado from g_reto where id_reto = '{$idQuestion}'";
-
-        $queryRate = $getDB->dataSet($queryRecordRate);
+        $uRetador = $queryRecord[0]['usuario_retador'];
+        $uRetado = $queryRecord[0]['usuario_retado'];
 
 
-        //Retador
-        $puntajeRetador = $queryRate[0]['correctas_retador'];
-        $tiempoRetador = $queryRate[0]['tiempo_retador'];
+        $sqlUpdate = "UPDATE g_reto SET correctas_retador = '{$countCorrect}', 
+            fecha_fin_reto = '{$fecha_fin}' where id_reto = '{$idQuestion}'";
 
-        // Retado
-        $puntajeRetado = $queryRate[0]['correctas_retado'];
-        $tiempoRetado = $queryRate[0]['tiempo_retado'];
+        if ($uRetado == $ujugador) {
+            $sqlUpdate = "UPDATE g_reto SET correctas_retado = '{$countCorrect}', 
+                fecha_fin_juego = '{$fecha_fin}', jugado = 1 where id_reto = '{$idQuestion}'";
+        }
 
-        if ($puntajeRetador == $puntajeRetado) {
-            if ($tiempoRetador < $tiempoRetado) {
+        $updReto = $getDB->execQuery($sqlUpdate);
+
+        if ($updReto && $uRetado == $ujugador) {
+
+            $queryRecordRate = "SELECT timediff(fecha_fin_reto, fecha_inicio_reto)
+                as tiempo_retador, correctas_retador, timediff(fecha_fin_juego, fecha_inicio_juego) 
+                as tiempo_retado, correctas_retado from g_reto where id_reto = '{$idQuestion}'";
+
+            $queryRate = $getDB->dataSet($queryRecordRate);
+
+
+            //Retador
+            $puntajeRetador = $queryRate[0]['correctas_retador'];
+            $tiempoRetador = $queryRate[0]['tiempo_retador'];
+
+            // Retado
+            $puntajeRetado = $queryRate[0]['correctas_retado'];
+            $tiempoRetado = $queryRate[0]['tiempo_retado'];
+
+            if ($puntajeRetador == $puntajeRetado) {
+                if ($tiempoRetador < $tiempoRetado) {
+                    $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '5', puntaje_retado = '1' where id_reto = '{$idQuestion}'";
+                } else {
+                    $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '1', puntaje_retado = '5' where id_reto = '{$idQuestion}'";
+                }
+            } else if($puntajeRetador > $puntajeRetado) {
                 $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '5', puntaje_retado = '1' where id_reto = '{$idQuestion}'";
             } else {
                 $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '1', puntaje_retado = '5' where id_reto = '{$idQuestion}'";
             }
-        } else if($puntajeRetador > $puntajeRetado) {
-            $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '5', puntaje_retado = '1' where id_reto = '{$idQuestion}'";
-        } else {
-            $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '1', puntaje_retado = '5' where id_reto = '{$idQuestion}'";
+
+            $updReto = $getDB->execQuery($sqlUpdatePuntos);
         }
 
-        $updReto = $getDB->execQuery($sqlUpdatePuntos);
+    } else {
+        $sqlUpdate = "UPDATE g_reto set fecha_fin_reto = '{$fecha_fin}', correctas_retador = '0', puntaje_retador = '0', 
+            fecha_inicio_juego = '{$fecha_fin}', fecha_fin_juego = '{$fecha_fin}', correctas_retado = '0', puntaje_retado = '5', 
+            jugado = '1' where id_reto = '{$idQuestion}'";
+
+        echo $getDB->execQuery($sqlUpdate);
     }
 }
 
