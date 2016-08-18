@@ -464,12 +464,12 @@ function updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_f
 
             if($uRetado == $ujugador) {
 
-                $queryRecordRate = "SELECT timediff(fecha_fin_reto, fecha_inicio_reto) as tiempo_retador where id_reto = '{$idQuestion}'";
+                $queryRecordRate = "SELECT timediff(fecha_fin_reto, fecha_inicio_reto) as tiempo_retador from g_reto where id_reto = '{$idQuestion}'";
 
                 $queryRate = $getDB->dataSet($queryRecordRate);
 
-                $sqlUpdateCancelled = "UPDATE g_reto set puntaje_retador = '5', puntaje_retado = '1', fecha_fin_juego = '{$fecha_fin}'
-                    where id_reto = '{$idQuestion}'";
+                $sqlUpdateCancelled = "UPDATE g_reto set puntaje_retador = '5', puntaje_retado = '1', fecha_fin_juego = '{$fecha_fin}', 
+                    jugado = '1' where id_reto = '{$idQuestion}'";
 
                 updateRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, 5, 1, $queryRate[0]['tiempo_retador'], '00:00:00');
 
