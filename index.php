@@ -45,7 +45,7 @@ $app->post("/save_selected_rpta/", function($req, $res, $args) {
 });
 
 $app->get("/get_resumen_juego/", function($req, $res, $args){
-    getResumenJuego($req->getParam('id'), $req->getParam('uid'));
+    getResumenJuego($req->getParam('id')/*, $req->getParam('uid')*/);
 });
 
 $app->post("/login/", function($req, $res, $args) {
@@ -256,15 +256,16 @@ function verificarRetoFueraFecha($user) {
     }
 }
 
-function getResumenJuego($id, $uid) {
+function getResumenJuego($id/*, $uid*/) {
     $getDB = new accdb();
 
-    $sql = "SELECT (select nikname from g_usuario where username = '{$uid}') as myNik, u.nikname as nikRival, r.correctas_retador, 
-        if(r.correctas_retado = 0, '', r.correctas_retado) as correctas_retado, time_format(timediff(r.fecha_fin_reto, 
-        r.fecha_inicio_reto), concat('%im ', '%ss')) as tiempo_juego_retador, if(r.jugado <> 0, time_format(timediff(r.fecha_fin_juego, 
-        r.fecha_inicio_juego), concat('%im ', '%ss')), 'Pendiente') as tiempo_juego_retado, if(r.jugado = 0, time_format(timediff
-        (r.fecha_inicio_reto + interval 1 day, now()), concat('Faltan %Hh ', '%im para ganar')), 'Juego Finalizado') as para_ganar 
-        from g_reto r, g_usuario u where r.usuario_retado = u.username and r.id_reto = {$id}";
+    $sql = "SELECT (select nikname from g_usuario where username = usuario_retador) as nikRetador, (select nikname 
+        from g_usuario where username = usuario_retado) as nikRetado, correctas_retador, if(correctas_retado = 0, '', 
+        correctas_retado) as correctas_retado, if(fecha_fin_reto = '0000-00-00 00:00:00', 'Cancelado', time_format
+        (timediff(fecha_fin_reto, fecha_inicio_reto), concat('%im ', '%ss'))) as tiempo_juego_retador, if(jugado <> 0, 
+        time_format(timediff(fecha_fin_juego, fecha_inicio_juego), concat('%im ', '%ss')), 'Pendiente') as tiempo_juego_retado, 
+        if(jugado = 0, time_format(timediff(fecha_inicio_reto + interval 1 day, now()), concat('Faltan %Hh ', '%im para ganar')), 
+        'Juego Finalizado') as para_ganar from g_reto where id_reto = {$id}";
 
     $json->Resumen = $getDB->dataSet($sql);
 
@@ -374,16 +375,19 @@ function updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_f
 
     $getDB = new accdb();
 
+    // Obteniendo datos de los usuarios que jugaron por cada reto
+    $sqlGetRecord = "SELECT *, year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as month FROM g_reto where id_reto = '{$idQuestion}'";
+
+    $queryRecord = $getDB->dataSet($sqlGetRecord);
+    $anio = $queryRecord[0]['anio'];
+    $month = $queryRecord[0]['month'];
+    $uRetador = $queryRecord[0]['usuario_retador'];
+    $uRetado = $queryRecord[0]['usuario_retado'];
+    $uFechaIn = $queryRecord[0]['fecha_inicio_reto'];
+
     if($cancelled == "") {
 
-        $sqlGetRecord = "SELECT * FROM g_reto where id_reto = '{$idQuestion}'";
-
-        $queryRecord = $getDB->dataSet($sqlGetRecord);
-
-        $uRetador = $queryRecord[0]['usuario_retador'];
-        $uRetado = $queryRecord[0]['usuario_retado'];
-
-
+        // Actualizando la fecha de termino de cada reto tanto del usuario retador como del retado
         $sqlUpdate = "UPDATE g_reto SET correctas_retador = '{$countCorrect}', 
             fecha_fin_reto = '{$fecha_fin}' where id_reto = '{$idQuestion}'";
 
@@ -394,6 +398,9 @@ function updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_f
 
         $updReto = $getDB->execQuery($sqlUpdate);
 
+        // validamos que se haya actualizado correctamente y si el que esta jugando es
+        // el usuario retado.
+        
         if ($updReto && $uRetado == $ujugador) {
 
             $queryRecordRate = "SELECT timediff(fecha_fin_reto, fecha_inicio_reto)
@@ -411,27 +418,109 @@ function updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_f
             $puntajeRetado = $queryRate[0]['correctas_retado'];
             $tiempoRetado = $queryRate[0]['tiempo_retado'];
 
+            // Consultamos la cantidad de respuestas correctas y el tiempo jugado
+            // para asignarle los puntajes a cada uno.
+
+            $pRetador = 5;
+            $pRetado = 1;
+            
             if ($puntajeRetador == $puntajeRetado) {
                 if ($tiempoRetador < $tiempoRetado) {
                     $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '5', puntaje_retado = '1' where id_reto = '{$idQuestion}'";
                 } else {
+
+                    $pRetador = 1;
+                    $pRetado = 5;
+
                     $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '1', puntaje_retado = '5' where id_reto = '{$idQuestion}'";
                 }
             } else if($puntajeRetador > $puntajeRetado) {
                 $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '5', puntaje_retado = '1' where id_reto = '{$idQuestion}'";
             } else {
+
+                $pRetador = 1;
+                $pRetado = 5;
+                
                 $sqlUpdatePuntos = "UPDATE g_reto SET puntaje_retador = '1', puntaje_retado = '5' where id_reto = '{$idQuestion}'";
             }
 
+            // Funcion que actualiza el ranking mensual.
+            updateRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, $pRetador, $pRetado, $tiempoRetador, $tiempoRetado);
+
+            // Guardamos los puntajes en la tabla retos
             $updReto = $getDB->execQuery($sqlUpdatePuntos);
         }
 
     } else {
-        $sqlUpdate = "UPDATE g_reto set fecha_fin_reto = '{$fecha_fin}', correctas_retador = '0', puntaje_retador = '0', 
-            fecha_inicio_juego = '{$fecha_fin}', fecha_fin_juego = '{$fecha_fin}', correctas_retado = '0', puntaje_retado = '5', 
-            jugado = '1' where id_reto = '{$idQuestion}'";
 
-        echo $getDB->execQuery($sqlUpdate);
+        $course = $queryRecord[0]['curso_id'];
+
+        $sqlRangking = "SELECT * from g_ranking where usuario_id = '{$ujugador}' and curso_id = '{$course}'";
+
+        $data = $getDB->dataSet($sqlRangking);
+
+        if (!empty($data[0])) {
+            $id = $data[0]['id_ranking'];
+
+            if($uRetado == $ujugador) {
+
+                $queryRecordRate = "SELECT timediff(fecha_fin_reto, fecha_inicio_reto) as tiempo_retador where id_reto = '{$idQuestion}'";
+
+                $queryRate = $getDB->dataSet($queryRecordRate);
+
+                $sqlUpdateCancelled = "UPDATE g_reto set puntaje_retador = '5', puntaje_retado = '1', fecha_fin_juego = '{$fecha_fin}'
+                    where id_reto = '{$idQuestion}'";
+
+                updateRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, 5, 1, $queryRate[0]['tiempo_retador'], '00:00:00');
+
+            } else {
+                if ($data[0]['year'] == $anio && $data[0]['month'] == $month) {
+                    $sqlUpdateCancelled = "UPDATE g_ranking set puntaje = if((puntaje - 3) < 0, 0, (puntaje - 3)) where id_ranking = '{$id}'";
+                }
+
+                $getDB->execQuery("DELETE from g_reto where id_reto = '{$idQuestion}'");
+            }
+        }
+
+        $getDB->execQuery($sqlUpdateCancelled);
+    }
+}
+
+function updateRanking($retador, $retado, $fecha, $idreto, $pRetador, $pRetado, $timeRetador, $timeRetado) {
+    $getDB = new accdb();
+    $sqlVerficarFecha = "SELECT year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as mes, curso_id 
+        from g_reto where id_reto = '{$idreto}'";
+    $dataReto = $getDB->dataSet($sqlVerficarFecha);
+
+    $anio = $dataReto[0]['anio'];
+    $month = $dataReto[0]['mes'];
+    $course = $dataReto[0]['curso_id'];
+
+    $usuarios = array($retador, $retado);
+    $puntaje = array($pRetador, $pRetado);
+    $tiempos = array($timeRetador, $timeRetado);
+
+    for($i = 0; $i < count($usuarios); $i++) {
+        $username = $usuarios[$i];
+        $puntosac = $puntaje[$i];
+        $tiempoac = $tiempos[$i];
+
+        $sqlRangking = "SELECT * from g_ranking where usuario_id = '{$username}' and curso_id = '{$course}'";
+        $data = $getDB->dataSet($sqlRangking);
+
+        $setRanking = "INSERT into g_ranking (usuario_id, curso_id, id_unidad, id_temageneral, puntaje, tiempo_jugado, year, month)
+            values('{$username}', '{$course}', '0', '0', '{$puntosac}', '{$tiempoac}', '{$anio}', '{$month}')";
+
+        if (!empty($data)) {
+            $id = $data[0]['id_ranking'];
+            if ($data[0]['year'] == $anio && $data[0]['month'] == $month) {
+
+                $setRanking = "UPDATE g_ranking set puntaje = (puntaje + {$puntosac}), tiempo_jugado = addtime(tiempo_jugado, '{$tiempoac}')
+                    where id_ranking = '{$id}'";
+            }
+        }
+
+        $getDB->execQuery($setRanking);
     }
 }
 
