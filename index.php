@@ -161,8 +161,8 @@ function get_profile($username) {
     $sqlPerdidos = "SELECT count(id_reto) as perdido from g_reto where (usuario_retador = 'ctapia' and puntaje_retador <= 1)
         or (usuario_retado = 'ctapia' and  puntaje_retado <= 1)";
 
-    $sqlPuntaje = "SELECT (select sum(puntaje_retador) from g_reto where usuario_retador = 'ctapia') + (select sum(puntaje_retado) 
-        from g_reto where usuario_retado = 'ctapia') as total";
+    $sqlPuntaje = "SELECT ifnull((select sum(puntaje_retador) from g_reto where usuario_retador = 'ctapia') + (select sum(puntaje_retado) 
+        from g_reto where usuario_retado = 'ctapia'), 0) as total";
 
     $json->Ganados = $getDB->dataSet($sqlGanados);
     $json->Perdidos = $getDB->dataSet($sqlPerdidos);
@@ -459,7 +459,7 @@ function updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_f
 
         $data = $getDB->dataSet($sqlRangking);
 
-        if (!empty($data[0])) {
+        if (!empty($data)) {
             $id = $data[0]['id_ranking'];
 
             if($uRetado == $ujugador) {
