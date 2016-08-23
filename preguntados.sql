@@ -1,13 +1,10 @@
 select * from g_respuestas;
 
+select * from g_curso where visible = 1;
 
 select * from g_preguntas where course_id = 'A48Z';
 
 select * from g_unidad;
-
-select * from g_usuario;
-
-truncate table g_reto;
 
 select fecha_inicio_reto, fecha_inicio_reto + interval 1 day as a, now(), timediff(fecha_inicio_reto + interval 1 day, now()) as b from g_reto where id_reto = 2;
 
@@ -74,22 +71,15 @@ select ifnull((select sum(puntaje_retador) from g_reto where usuario_retador = '
 
 -- update g_usuario set nikname = lcase(concat(substring_index(lastname, ' ', -1), username)) where usuario_id = usuario_id;
 
-select * from g_reto;
-
 truncate table g_ranking;
 truncate table g_reto;
 truncate table g_respuesta_usuario;
 
 select * from g_ranking;
-
-update g_ranking set puntaje = if((puntaje - 3) < 0, 0, (puntaje - 3)) where id_ranking = 1;
-
+select * from g_reto;
 select * from g_respuesta_usuario;
 
-
--- alter table g_respuesta_usuario add column id_reto int not null after respuesta_id;
-
-select * from g_respuestas;
+update g_ranking set puntaje = if((puntaje - 3) < 0, 0, (puntaje - 3)) where id_ranking = 1;
 
 select * from g_usuario;
 
@@ -103,3 +93,26 @@ update g_usuario set firstname = concat(substr(firstname, 1, 1), lcase(substr(fi
 
 -- alter table g_usuario add column device_notification_id varchar(500) default "" after creator_id, add column image_avatar varchar(50) default "" after device_notification_id;
 
+insert into g_usuario (firstname, lastname, username, password, email, fecha_registro, creator_id, active) values 
+('Ines Susana', 'Evaristo Chiyong', 'ievaristo', sha1('ievaristo'), 'ievaristo@utp.edu.pe', now(), 1, 1),
+('Jenny', 'Rios Poma', 'jriosp', sha1('jriosp'), 'jriosp@utp.edu.pe', now(), 1, 1),
+('Gabriela Maria', 'Arizola Velasquez', 'garizola', sha1('garizola'), 'garizola@utp.edu.pe', now(), 1, 1),
+('Victoria', 'Flores Laurente', 'vflores', sha1('vflores'), 'vflores@utp.edu.pe', now(), 1, 1),
+('Renan', 'Flores Taype', 'rflorest', sha1('rflorest'), 'rflorest@utp.edu.pe', now(), 1, 1),
+('Eduardo Antonio', 'Zapata Isasi', 'ezapata', sha1('ezapata'), 'ezapata@utp.edu.pe', now(), 1, 1),
+('Lesly Giuliana', 'Loza Arista', 'lloza', sha1('lloza'), 'lloza@utp.edu.pe', now(), 1, 1),
+('Giann Carlo', 'Carrasco Taco', 'gcarrasco', sha1('gcarrasco'), 'gcarrasco@utp.edu.pe', now(), 1, 1),
+('Carlos Alexander', 'Valverde Castillo', 'cvalverde', sha1('cvalverde'), 'cvalverde@utp.edu.pe', now(), 1, 1),
+('Jose Carlos', 'Ardiles Alarcon', 'jardiles', sha1('jardiles'), 'jardiles@utp.edu.pe', now(), 1, 1),
+('Jhonatan Erick', 'Montes Machicado', 'jmontes', sha1('jmontes'), 'jmontes@utp.edu.pe', now(), 1, 1),
+('Samuel Tony', 'Huarcaya Jara', 'shuarcaya', sha1('shuarcaya'), 'shuarcaya@utp.edu.pe', now(), 1, 1),
+('Katty Janett', 'Huaringa Angeles', 'khuaringa', sha1('khuaringa'), 'khuaringa@utp.edu.pe', now(), 1, 1),
+('Paul Fernando', 'Iparraguirre Velarde', 'piparraguir', sha1('piparraguir'), 'piparraguir@utp.edu.pe', now(), 1, 1),
+('Miluska Adriana', 'Bellido Acevedo', 'mbellido', sha1('mbellido'), 'mbellido@utp.edu.pe', now(), 1, 1),
+('Lia Consuelo', 'Flores Gallegos', 'lfloresg', sha1('lfloresg'), 'lfloresg@utp.edu.pe', now(), 1, 1),
+('Rosly Andrea', 'Mejia León', 'rmejia', sha1('rmejia'), 'rmejia@utp.edu.pe', now(), 1, 1);
+
+
+select * from g_usuario where active = 1 order by usuario_id asc;
+
+update g_usuario set nikname = username where usuario_id = usuario_id and active = 1;

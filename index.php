@@ -343,7 +343,7 @@ function getUsers($page, $recs, $username, $keywords) {
     }
 
     $sql = "SELECT concat(firstname, ' ', lastname) as uname, nikname as usuario, username 
-        from g_usuario where username <> '{$username}' and (lastname like '%{$keywords}%' 
+        from g_usuario where username <> '{$username}' and active = 1 and (lastname like '%{$keywords}%' 
         or firstname like '%{$keywords}%' or nikname like '%{$keywords}%') order by 
         usuario_id LIMIT {$limit}, {$recs}";
 
