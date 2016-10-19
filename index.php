@@ -8,6 +8,28 @@ require 'core/accdb.php';
 
 $app = new Slim\App();
 
+$app->get("/getYearAndMonth/", function($req, $res, $args){
+    $currentYear = date('Y');
+    $pastYear = $currentYear - 3;
+    
+    for($pastYear; $pastYear <= $currentYear; $pastYear++) {
+        $year[$pastYear] = $pastYear;
+    }
+
+    $months = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    for($month = 1; $month < count($months); $month++) {
+        $meses[$month] = $months[$month];
+    }
+
+    $json->year = $year;
+    $json->year['selected'] = date('Y');
+    $json->mes = $meses;
+    $json->mes['selected'] = date('n');
+
+    echo json_encode($json);
+});
+
 $app->get("/list-courses/", function($req, $res, $args) {
     getCursosAlumnos($req->getParam('page'), 30);
 });
@@ -48,6 +70,18 @@ $app->get("/get_resumen_juego/", function($req, $res, $args){
     getResumenJuego($req->getParam('id')/*, $req->getParam('uid')*/);
 });
 
+$app->get("/getRankingByCourse/", function($req, $res, $args){
+    $course = $req->getParam('courseId');
+    $year = $req->getParam('year');
+    $month = $req->getParam('month');
+    getRankingByCourse($course, $year, $month);
+});
+
+$app->get("/counter/", function($req, $res, $args){
+    $uname = $req->getParam('uname');
+    getRetosRecibidos($uname);
+});
+
 $app->post("/login/", function($req, $res, $args) {
     $user = $req->getParam('user');
     $pass = $req->getParam('pass');
@@ -86,7 +120,7 @@ $app->get("/get_profile/", function($req, $res, $args){
 });
 
 $app->post("/change_nick/", function($req, $res, $args){
-    changeNick($req->getParam('userid'), $req->getParam('niknam'));
+    changeNick($req->getParam('userid'), $req->getParam('niknam'), $req->getParam('image'));
 });
 
 $app->post("/registerDevice/", function($req, $res, $args){
@@ -145,6 +179,14 @@ function sendPushNotification($toUser, $fromUser) {
     echo $result;
 }
 
+function getRetosRecibidos($uname){
+    $getDB = new accdb();
+    $sql = "SELECT count(*) retos from g_reto where usuario_retado = '{$uname}' and jugado = 0";
+    $json->retos = $getDB->dataSet($sql);
+    
+    echo json_encode($json);
+}
+
 function registerDevice($userid, $identifier) {
     $getDB = new accdb();
 
@@ -155,14 +197,15 @@ function registerDevice($userid, $identifier) {
 
 function get_profile($username) {
     $getDB = new accdb();
-    $sqlGanados = "SELECT count(id_reto) as ganado from g_reto where (usuario_retador = 'ctapia' and puntaje_retador > 1) 
-        or (usuario_retado = 'ctapia' and  puntaje_retado > 1)";
 
-    $sqlPerdidos = "SELECT count(id_reto) as perdido from g_reto where (usuario_retador = 'ctapia' and puntaje_retador <= 1)
-        or (usuario_retado = 'ctapia' and  puntaje_retado <= 1)";
+    $sqlGanados = "SELECT count(id_reto) as ganado from g_reto where (usuario_retador = '{$username}' and puntaje_retador > 1) 
+        or (usuario_retado = '{$username}' and  puntaje_retado > 1)";
 
-    $sqlPuntaje = "SELECT ifnull((select sum(puntaje_retador) from g_reto where usuario_retador = 'ctapia') + (select sum(puntaje_retado) 
-        from g_reto where usuario_retado = 'ctapia'), 0) as total";
+    $sqlPerdidos = "SELECT count(id_reto) as perdido from g_reto where (usuario_retador = '{$username}' and puntaje_retador <= 1)
+        or (usuario_retado = '{$username}' and  puntaje_retado <= 1)";
+
+    $sqlPuntaje = "SELECT ifnull((select sum(puntaje_retador) from g_reto where usuario_retador = '{$username}'), 0) + ifnull((select sum(puntaje_retado) 
+        from g_reto where usuario_retado = '{$username}'), 0) as total";
 
     $json->Ganados = $getDB->dataSet($sqlGanados);
     $json->Perdidos = $getDB->dataSet($sqlPerdidos);
@@ -171,9 +214,9 @@ function get_profile($username) {
     echo json_encode($json);
 }
 
-function changeNick($userid, $nik) {
+function changeNick($userid, $nik, $img) {
     $getDB = new accdb();
-    $sql = "UPDATE g_usuario set nikname = '{$nik}' where usuario_id = '{$userid}'";
+    $sql = "UPDATE g_usuario set nikname = '{$nik}', image_avatar = '{$img}' where usuario_id = '{$userid}'";
     echo $getDB->execQuery($sql);
 }
 
@@ -187,19 +230,19 @@ function getRetos($user, $get, $id) {
         /*****************************************/
 
         $sqlRetosEnviados = "SELECT r.id_reto, r.usuario_retador, r.unidad_id, r.curso_id, r.id_temageneral, r.fecha_inicio_reto, 
-            r.usuario_retado, u.nikname, r.jugado, time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), 
-            concat('%H', 'h', ':', '%i', 'm')) as para_ganar from g_reto r, g_usuario u where r.usuario_retado = u.username 
-            and r.usuario_retador = '{$user}' and r.jugado = 0";
+            r.usuario_retado, u.nikname, r.jugado, (select image_avatar from g_usuario where username = r.usuario_retado) as avatar, 
+            time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as para_ganar 
+            from g_reto r, g_usuario u where r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 0";
 
         $sqlRetosRecibidos = "SELECT  r.id_reto, r.usuario_retador, u.nikname, r.unidad_id, r.curso_id, r.id_temageneral,
-                r.fecha_inicio_reto, r.usuario_retado, r.jugado, time_format(timediff(r.fecha_inicio_reto + 
-                interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as para_perder from g_reto r, 
-                g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 0";
+                r.fecha_inicio_reto, r.usuario_retado, r.jugado, (select image_avatar from g_usuario where username = r.usuario_retador) 
+                as avatar, time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as 
+                para_perder from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 0";
 
-        $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, 'Enviado' as origen, if(r.puntaje_retador > 
+        $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen, if(r.puntaje_retador > 
             r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where r.usuario_retado = u.username 
             and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador as usuario, 
-            u.nikname, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado 
+            u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado 
             from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 order by id_reto desc";
 
         $json->Enviado = $getDB->dataSet($sqlRetosEnviados);
@@ -208,21 +251,21 @@ function getRetos($user, $get, $id) {
 
     } else {
 
-        $sqlDetalle = "SELECT r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, r.usuario_retado as 
-            rival, u.nikname, 'Enviado' as origen, if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado, 
-            r.correctas_retador as mis_correctas, r.puntaje_retador as mi_punto, r.correctas_retado as correctas_rival, r.puntaje_retado 
-            as punto_rival, time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as miTiempo, 
-            time_format(timediff(r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) as tiempoRival 
-            from g_reto r, g_usuario u where r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 1  
-            and r.id_reto = {$id}
+        $sqlDetalle = "SELECT r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, (select image_avatar 
+            from g_usuario where username = '{$user}') as myAvatar, r.usuario_retado as rival, u.nikname, u.image_avatar, 'Enviado' 
+            as origen, if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado, r.correctas_retador as 
+            mis_correctas, r.puntaje_retador as mi_punto, r.correctas_retado as correctas_rival, r.puntaje_retado as punto_rival, 
+            time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as miTiempo, time_format(timediff
+            (r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) as tiempoRival from g_reto r, g_usuario u
+             where r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 1 and r.id_reto = {$id}
             union
-            select r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, r.usuario_retador as rival, u.nikname, 
-            'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado, r.correctas_retado 
-            as mis_correctas, r.puntaje_retado as mi_punto, r.correctas_retador as correctas_retado, r.puntaje_retador as punto_rival, 
-            time_format(timediff(r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) as miTiempo, 
-            time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as tiempoRival from 
-            g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 and r.id_reto = {$id} 
-            order by id_reto";
+            select r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, (select image_avatar from g_usuario 
+            where username = '{$user}') as myAvatar, r.usuario_retador as rival, u.nikname, u.image_avatar, 'Recibido' as origen, 
+            if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado, r.correctas_retado as mis_correctas, 
+            r.puntaje_retado as mi_punto, r.correctas_retador as correctas_retado, r.puntaje_retador as punto_rival, time_format(timediff
+            (r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) as miTiempo, time_format(timediff(r.fecha_fin_reto, 
+            r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as tiempoRival from g_reto r, g_usuario u where r.usuario_retador = 
+            u.username and r.usuario_retado = '{$user}' and r.jugado = 1 and r.id_reto = {$id} order by id_reto";
 
         $json->Detalle = $getDB->dataSet($sqlDetalle);
 
@@ -259,10 +302,11 @@ function verificarRetoFueraFecha($user) {
 function getResumenJuego($id/*, $uid*/) {
     $getDB = new accdb();
 
-    $sql = "SELECT (select nikname from g_usuario where username = usuario_retador) as nikRetador, (select nikname 
-        from g_usuario where username = usuario_retado) as nikRetado, correctas_retador, if(correctas_retado = 0, '', 
-        correctas_retado) as correctas_retado, if(fecha_fin_reto = '0000-00-00 00:00:00', 'Cancelado', time_format
-        (timediff(fecha_fin_reto, fecha_inicio_reto), concat('%im ', '%ss'))) as tiempo_juego_retador, if(jugado <> 0, 
+    $sql = "SELECT (select nikname from g_usuario where username = usuario_retador) as nikRetador, (select image_avatar from 
+        g_usuario where username = usuario_retador) as myAvatar, (select nikname from g_usuario where username = usuario_retado) 
+        as nikRetado, (select image_avatar from g_usuario where username = usuario_retado) as avatarRetado, correctas_retador, 
+        if(correctas_retado = 0, '', correctas_retado) as correctas_retado, if(fecha_fin_reto = '0000-00-00 00:00:00', 'Cancelado', 
+        time_format(timediff(fecha_fin_reto, fecha_inicio_reto), concat('%im ', '%ss'))) as tiempo_juego_retador, if(jugado <> 0, 
         time_format(timediff(fecha_fin_juego, fecha_inicio_juego), concat('%im ', '%ss')), 'Pendiente') as tiempo_juego_retado, 
         if(jugado = 0, time_format(timediff(fecha_inicio_reto + interval 1 day, now()), concat('Faltan %Hh ', '%im para ganar')), 
         'Juego Finalizado') as para_ganar from g_reto where id_reto = {$id}";
@@ -342,7 +386,7 @@ function getUsers($page, $recs, $username, $keywords) {
         $limit = ($page - 1) * $recs;
     }
 
-    $sql = "SELECT concat(firstname, ' ', lastname) as uname, nikname as usuario, username 
+    $sql = "SELECT concat(firstname, ' ', lastname) as uname, nikname as usuario, username, image_avatar 
         from g_usuario where username <> '{$username}' and active = 1 and (lastname like '%{$keywords}%' 
         or firstname like '%{$keywords}%' or nikname like '%{$keywords}%') order by 
         usuario_id LIMIT {$limit}, {$recs}";
@@ -384,6 +428,7 @@ function updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_f
     $uRetador = $queryRecord[0]['usuario_retador'];
     $uRetado = $queryRecord[0]['usuario_retado'];
     $uFechaIn = $queryRecord[0]['fecha_inicio_reto'];
+    $unidadId = $queryRecord[0]['unidad_id'];
 
     if($cancelled == "") {
 
@@ -445,7 +490,7 @@ function updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_f
             }
 
             // Funcion que actualiza el ranking mensual.
-            updateRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, $pRetador, $pRetado, $tiempoRetador, $tiempoRetado);
+            updateRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, $unidadId, $pRetador, $pRetado, $tiempoRetador, $tiempoRetado);
 
             // Guardamos los puntajes en la tabla retos
             $updReto = $getDB->execQuery($sqlUpdatePuntos);
@@ -471,7 +516,7 @@ function updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_f
                 $sqlUpdateCancelled = "UPDATE g_reto set puntaje_retador = '5', puntaje_retado = '1', fecha_fin_juego = '{$fecha_fin}', 
                     jugado = '1' where id_reto = '{$idQuestion}'";
 
-                updateRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, 5, 1, $queryRate[0]['tiempo_retador'], '00:00:00');
+                updateRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, $unidadId, 5, 1, $queryRate[0]['tiempo_retador'], '00:00:00');
 
             } else {
                 if ($data[0]['year'] == $anio && $data[0]['month'] == $month) {
@@ -486,7 +531,7 @@ function updateRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_f
     }
 }
 
-function updateRanking($retador, $retado, $fecha, $idreto, $pRetador, $pRetado, $timeRetador, $timeRetado) {
+function updateRanking($retador, $retado, $fecha, $idreto, $unidadId, $pRetador, $pRetado, $timeRetador, $timeRetado) {
     $getDB = new accdb();
     $sqlVerficarFecha = "SELECT year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as mes, curso_id 
         from g_reto where id_reto = '{$idreto}'";
@@ -509,7 +554,7 @@ function updateRanking($retador, $retado, $fecha, $idreto, $pRetador, $pRetado, 
         $data = $getDB->dataSet($sqlRangking);
 
         $setRanking = "INSERT into g_ranking (usuario_id, curso_id, id_unidad, id_temageneral, puntaje, tiempo_jugado, year, month)
-            values('{$username}', '{$course}', '0', '0', '{$puntosac}', '{$tiempoac}', '{$anio}', '{$month}')";
+            values('{$username}', '{$course}', '{$unidadId}', '0', '{$puntosac}', '{$tiempoac}', '{$anio}', '{$month}')";
 
         if (!empty($data)) {
             $id = $data[0]['id_ranking'];
@@ -532,10 +577,20 @@ function setSelectedRespuesta($idreto, $username, $courseid, $unidadid, $general
     $getDB->execQuery($sql);
 }
 
+function getRankingByCourse($course, $year, $month){
+    $getDB = new accdb();
+    $sql = "SELECT u.nikname, u.image_avatar, r.* from g_ranking r, g_usuario u where u.username = r.usuario_id and 
+        r.curso_id = '{$course}' and r.year = '{$year}' and r.month = '{$month}' order by r.puntaje desc, r.tiempo_jugado desc";
+    
+    $ranking = $getDB->dataSet($sql);
+
+    echo json_encode($ranking);
+}
+
 function login($uname, $pass) {
     $getDB = new accdb();
     $sha1pass = sha1($pass);
-    $sqlUser = "SELECT usuario_id, firstname, lastname, username, nikname, email 
+    $sqlUser = "SELECT usuario_id, firstname, lastname, username, password, nikname, email, image_avatar 
         FROM g_usuario WHERE username = '{$uname}' and password = '{$sha1pass}'";
 
     //$wsUrl = 'http://10.31.1.223:8051/ServiceAD.asmx?WSDL';

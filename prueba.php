@@ -1,5 +1,5 @@
 <?php
-	$to="cAwiQ4diWbA:APA91bEWYwEsuf00l9xOeHmdHI6f-U7jPlR9koOIbae-M3fbnBC4AoDBygspM6SL8OCufbqhSBh_zIPcmJFfxKubWrrDVmIOpyllr8FBhIdH7-8qFE6d0BmAuoMFuAbXUeNBCPeQMGyd";
+	/*$to="cAwiQ4diWbA:APA91bEWYwEsuf00l9xOeHmdHI6f-U7jPlR9koOIbae-M3fbnBC4AoDBygspM6SL8OCufbqhSBh_zIPcmJFfxKubWrrDVmIOpyllr8FBhIdH7-8qFE6d0BmAuoMFuAbXUeNBCPeQMGyd";
 	$title="Tienes un nuevo reto!!!";
 	$message="Cristian, un nuevo retador te ha desafiado";
 	sendPush($to,$title,$message);
@@ -38,5 +38,17 @@
 		$result = curl_exec($ch );
 		curl_close( $ch );
 		echo $result;
-	}
+	}*/
+
+	class A{
+                function x(){echo "In A"; }
+        }
+        class B{
+                function getA() {
+                        return new A();
+                }
+        }
+        $b = new B();
+
+    $b->getA()->x();
 ?>

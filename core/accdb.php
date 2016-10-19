@@ -6,6 +6,7 @@ class accdb extends mysqli{
 	private $user = "root";
 	private $pass = "";
 	private $ddbb = "db_preguntados";
+	private static $instance;
 	protected $cn;
 
 	public function __construct(){
