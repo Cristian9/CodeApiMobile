@@ -47,7 +47,7 @@ $app->get("/list-users/", function($req, $res, $args) {
 });
 
 $app->get("/list-retos/", function($req, $res, $args) {
-    getRetos($req->getParam('args'), $req->getParam('get'), $req->getParam('id'));
+    getRetos($req->getParam('args'), $req->getParam('get'), $req->getParam('id'), $req->getParam('page'));
 });
 
 $app->get("/getQuestions/", function($req, $res, $args) {
@@ -220,38 +220,61 @@ function changeNick($userid, $nik, $img) {
     echo $getDB->execQuery($sql);
 }
 
-function getRetos($user, $get, $id) {
+function getRetos($user, $get, $id, $page) {
     $getDB = new accdb();
 
-    if ($get == "all") {
+    switch ($get) {
+        case 'all':
+            /********* Verifica si algún reto, enviado o recibido esta fuera de fecha ****/
+            verificarRetoFueraFecha($user);
+            /*****************************************/
 
-        /********* Verifica si algún reto, enviado o recibido esta fuera de fecha ****/
-        verificarRetoFueraFecha($user);
-        /*****************************************/
+            $sqlRetosEnviados = "SELECT r.id_reto, r.usuario_retador, r.unidad_id, r.curso_id, r.id_temageneral, r.fecha_inicio_reto, 
+                r.usuario_retado, u.nikname, r.jugado, (select image_avatar from g_usuario where username = r.usuario_retado) as avatar, 
+                time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as para_ganar 
+                from g_reto r, g_usuario u where r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 0";
 
-        $sqlRetosEnviados = "SELECT r.id_reto, r.usuario_retador, r.unidad_id, r.curso_id, r.id_temageneral, r.fecha_inicio_reto, 
-            r.usuario_retado, u.nikname, r.jugado, (select image_avatar from g_usuario where username = r.usuario_retado) as avatar, 
-            time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as para_ganar 
-            from g_reto r, g_usuario u where r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 0";
+            $sqlRetosRecibidos = "SELECT  r.id_reto, r.usuario_retador, u.nikname, r.unidad_id, r.curso_id, r.id_temageneral,
+                    r.fecha_inicio_reto, r.usuario_retado, r.jugado, (select image_avatar from g_usuario where username = r.usuario_retador) 
+                    as avatar, time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as 
+                    para_perder from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 0";
 
-        $sqlRetosRecibidos = "SELECT  r.id_reto, r.usuario_retador, u.nikname, r.unidad_id, r.curso_id, r.id_temageneral,
-                r.fecha_inicio_reto, r.usuario_retado, r.jugado, (select image_avatar from g_usuario where username = r.usuario_retador) 
-                as avatar, time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as 
-                para_perder from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 0";
+            $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen, if(r.puntaje_retador > 
+                r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where r.usuario_retado = u.username 
+                and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador as usuario, 
+                u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado 
+                from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 
+                order by id_reto desc limit 0, 10";
 
-        $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen, if(r.puntaje_retador > 
-            r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where r.usuario_retado = u.username 
-            and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador as usuario, 
-            u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado 
-            from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 order by id_reto desc";
+            $json->Enviado = $getDB->dataSet($sqlRetosEnviados);
+            $json->Recibido = $getDB->dataSet($sqlRetosRecibidos);
+            $json->Historial = $getDB->dataSet($sqlRetosHistorial);
+            break;
 
-        $json->Enviado = $getDB->dataSet($sqlRetosEnviados);
-        $json->Recibido = $getDB->dataSet($sqlRetosRecibidos);
-        $json->Historial = $getDB->dataSet($sqlRetosHistorial);
+        case 'history':
+            /********* Verifica si algún reto, enviado o recibido esta fuera de fecha ****/
+            verificarRetoFueraFecha($user);
+            /*****************************************/
 
-    } else {
+            if($page == '0') {
+                $limite = 0;
+            } else {
+                $limite = ($page - 1) * 10;
+            }
 
-        $sqlDetalle = "SELECT r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, (select image_avatar 
+            $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen, if(r.puntaje_retador > 
+                r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where r.usuario_retado = u.username 
+                and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador as usuario, 
+                u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') 
+                as resultado from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 
+                order by id_reto desc limit {$limite}, 10";
+
+            $json->Historial = $getDB->dataSet($sqlRetosHistorial);
+            
+            break;
+        
+        default:
+            $sqlDetalle = "SELECT r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, (select image_avatar 
             from g_usuario where username = '{$user}') as myAvatar, r.usuario_retado as rival, u.nikname, u.image_avatar, 'Enviado' 
             as origen, if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado, r.correctas_retador as 
             mis_correctas, r.puntaje_retador as mi_punto, r.correctas_retado as correctas_rival, r.puntaje_retado as punto_rival, 
@@ -267,9 +290,8 @@ function getRetos($user, $get, $id) {
             r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as tiempoRival from g_reto r, g_usuario u where r.usuario_retador = 
             u.username and r.usuario_retado = '{$user}' and r.jugado = 1 and r.id_reto = {$id} order by id_reto";
 
-        $json->Detalle = $getDB->dataSet($sqlDetalle);
-
-
+            $json->Detalle = $getDB->dataSet($sqlDetalle);
+            break;
     }
 
     echo json_encode($json);
