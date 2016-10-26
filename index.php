@@ -340,6 +340,7 @@ function getResumenJuego($id/*, $uid*/) {
 
 function getCursosAlumnos($page, $recs) {
     $getDB = new accdb();
+    
     if (!isset($page) || $page == 0) {
         $limit = 0;
     } else {
@@ -612,7 +613,7 @@ function getRankingByCourse($course, $year, $month){
 function login($uname, $pass) {
     $getDB = new accdb();
     $sha1pass = sha1($pass);
-    $sqlUser = "SELECT usuario_id, firstname, lastname, username, password, nikname, email, image_avatar 
+    $sqlUser = "SELECT usuario_id, firstname, lastname, username, nikname, email, image_avatar 
         FROM g_usuario WHERE username = '{$uname}' and password = '{$sha1pass}'";
 
     //$wsUrl = 'http://10.31.1.223:8051/ServiceAD.asmx?WSDL';
