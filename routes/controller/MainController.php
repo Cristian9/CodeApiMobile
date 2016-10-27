@@ -17,13 +17,21 @@ class MainController extends Controller {
 		echo json_encode($user);
 	}
 
-	public function listarCursos() {
+	public function listarCursos($request, $response) {
+		$nameKey = $this->csrf->getTokenNameKey();
+	    $valueKey = $this->csrf->getTokenValueKey();
+	    $name = $request->getAttribute($nameKey);
+	    $value = $request->getAttribute($valueKey);
+
+	    echo $nameKey . ' = ' . $name . PHP_EOL;
+	    echo $valueKey . ' = ' . $value;
+		/*
 		$courses = MainModel::listaCursos();
 
-		echo json_encode($courses);
+		echo json_encode($courses);*/
 	}
 
-	public function listarUnidad($request, $reqponse) {
+	public function listarUnidad($request, $response) {
 		$course_id = $request->getParam('courseId');
 
 		$unidad_course = MainModel::listarUnidad($course_id);
@@ -107,6 +115,7 @@ class MainController extends Controller {
 	    $courseId = $request->getParam('courseId');
 	    $uretado = $request->getParam('user_retado');
 	    $idTemageneral = $request->getParam('id_temageneral');
+
 	    $fecha_inicio = date('Y-m-d H:i:s');
 
 	    $result = MainModel::insertarRetos($id_reto, $uretador, $unidadId, $courseId, $uretado, $idTemageneral, $fecha_inicio);
@@ -124,6 +133,59 @@ class MainController extends Controller {
 	    $result = MainModel::actualizaRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_fin);
 
 	    print_r($result);
+	}
+
+	public function UpdateFechaRetos($request, $response) {
+		$id = $request->getParam('idReto');
+		$fecha_inicio = date('Y-m-d H:i:s');
+
+		$result = MainModel::UpdateFechaRetos($id, $fecha_inicio);
+
+		echo $result;
+	}
+
+	public function ObtenerPerfil($request, $response) {
+		$username = $request->getParam('username');
+
+		$profile = MainModel::ObtenerPerfil($username);
+
+		echo json_encode($profile);
+	}
+
+	public function ActualizaUsuario($request, $response) {
+		$userid = $request->getParam('userid');
+		$nik = $request->getParam('niknam');
+		$img = $request->getParam('image');
+
+		$result = MainModel::ActualizaUsuario($userid, $nik, $img);
+
+		echo $result;
+	}
+
+	public function InsertaCodeDispositivo($request, $response) {
+		$userid = $request->getParam('userid');
+		$identifier = $request->getParam('identifier');
+
+		$result = MainModel::InsertaCodeDispositivo($userid, $identifier);
+
+		echo $result;
+	}
+
+	public function DeleteRetoFallado($request, $response) {
+		$lastID = $request->getParam('lastID');
+
+		$result = MainModel::DeleteRetoFallado($lastID);
+
+		echo $result;
+	}
+
+	public function Notificacion($request, $response) {
+		$toUser = $request->getParam('toUser');
+		$fromUser = $request->getParam('fromUser');
+
+		$result = MainModel::Notificacion($toUser, $fromUser);
+
+		print_r($result);
 	}
 
 	public function getYearAndMonth() {

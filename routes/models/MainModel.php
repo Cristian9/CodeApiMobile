@@ -252,15 +252,6 @@ class MainModel extends Model {
 
 	    if($cancelled == "") {
 
-	    	$sqlUpdate = DB::table('g_reto')
-	    				->where('id_reto', $idQuestion)
-	    				->update(
-	    					[
-	    						'correctas_retador' => $countCorrect,
-	    						'fecha_fin_reto' => $fecha_fin
-	    					]
-	    				);
-
 	    	if($uRetado == $ujugador) {
 	    		$sqlUpdate = DB::table('g_reto')
 	    				->where('id_reto', $idQuestion)
@@ -272,6 +263,15 @@ class MainModel extends Model {
 	    					]
 	    				);
 
+	    	} else {
+	    		$sqlUpdate = DB::table('g_reto')
+	    				->where('id_reto', $idQuestion)
+	    				->update(
+	    					[
+	    						'correctas_retador' => $countCorrect,
+	    						'fecha_fin_reto' => $fecha_fin
+	    					]
+	    				);
 	    	}
 
 	    	if($sqlUpdate && $uRetado == $ujugador) {
@@ -298,7 +298,7 @@ class MainModel extends Model {
 
 	            if($puntajeRetador == $puntajeRetado) {
 
-	            	if ($tiempoRetador == $tiempoRetado) {
+	            	if ($tiempoRetador < $tiempoRetado) {
 
 	            		$sqlUpdatePuntos = DB::table('g_reto')
 	            							->where('id_reto', $idQuestion)
@@ -356,18 +356,228 @@ class MainModel extends Model {
 	            // Funcion que actualiza el ranking mensual.
 	            
 	            MainModel::actualizaRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, $unidadId, $pRetador, $pRetado, $tiempoRetador, $tiempoRetado);
+	    	} 
 
-	    	} else {
+	    } else {
 
-	    		$course = $sqlGetRecord[0]->curso_id;
+    		$course = $sqlGetRecord[0]->curso_id;
 
-	    		$sqlRangking = DB::table('g_reto')
-	    						->where()
-	    						->get();
-	    	}
+    		$sqlRanking = DB::table('g_ranking')
+    						->where(
+    							[
+    								['usuario_id', '=', $ujugador],
+    								['curso_id', '=', $course]
+    							]
+    						)
+    						->get();
 
+    		if(!empty($sqlRanking)) {
+
+    			$id = $sqlRanking[0]->id_ranking;
+
+    			if($uRetado == $ujugador) {
+
+    				$queryRecordRate = DB::table('g_reto')
+    									->select(DB::raw('timediff(fecha_fin_reto, fecha_inicio_reto) as tiempo_retador'))
+    									->where('id_reto', '=', $idQuestion)->get();
+
+    				$sqlUpdateCancelled = DB::table('g_reto')
+    									->where('id_reto', $idQuestion)
+    									->update(
+    										[
+    											'puntaje_retador' => 5,
+    											'puntaje_retado' => 0,
+    											'fecha_fin_juego' => $fecha_fin,
+    											'jugado' => 1
+    										]
+    									);
+
+    				MainModel::actualizaRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, $unidadId, 5, -3, $queryRecordRate[0]->tiempo_retador, '00:00:00');
+    			} else {
+
+    				if ($sqlRanking[0]->year == $anio && $sqlRanking[0]->month == $month) {
+
+    					$sqlUpdateCancelled = DB::update("UPDATE g_ranking set puntaje = if((puntaje - 3) < 0, 0, (puntaje - 3)) 
+    											where id_ranking = '{$id}'");
+    				}
+
+    				DB::table('g_reto')->where('id_reto', '=', $idQuestion)->delete();
+    			}
+    		} 
 	    }
-		return $cancelled;
+	}
+
+	public function actualizaRanking($retador, $retado, $fecha, $idreto, $unidadId, $pRetador, $pRetado, $timeRetador, $timeRetado) {
+		$sqlVerificaFecha = DB::table('g_reto')
+							->select(DB::raw('year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as mes, curso_id'))
+							->where('id_reto', '=', $idreto)->get();
+
+		$anio = $sqlVerificaFecha[0]->anio;
+		$month = $sqlVerificaFecha[0]->mes;
+		$course = $sqlVerificaFecha[0]->curso_id;
+
+		$usuarios = array($retador, $retado);
+		$puntaje = array($pRetador, $pRetado);
+		$tiempos = array($timeRetador, $timeRetado);
+
+		for($i = 0; $i < count($usuarios); $i++) {
+			$username = $usuarios[$i];
+			$puntosac = $puntaje[$i];
+			$tiemposc = $tiempos[$i];
+
+			$sqlRanking = DB::table('g_ranking')
+						->where(
+							[
+								['usuario_id', '=', $username],
+								['curso_id', '=', $course]
+							]
+						)->get();
+
+			if(!empty($sqlRanking)) {
+				$id = $sqlRanking[0]->id_ranking;
+
+				if ($sqlRanking[0]->year == $anio && $sqlRanking[0]->month == $month) {
+					$setRanking = DB::update("UPDATE g_ranking set puntaje = (puntaje + {$puntosac}), tiempo_jugado = 
+								addtime(tiempo_jugado, '{$tiempoac}') where id_ranking = '{$id}'");
+				}
+			} else {
+
+				$setRanking = DB::insert("INSERT into g_ranking (usuario_id, curso_id, id_unidad, id_temageneral, puntaje, 
+								tiempo_jugado, year, month) values('{$username}', '{$course}', '{$unidadId}', '0', '{$puntosac}', 
+								'{$tiempoac}', '{$anio}', '{$month}')");
+			}
+		}
+
+		return $setRanking;
+	}
+
+	public function DeleteRetoFallado($lastID) {
+		$retoDlt = DB::table('g_reto')
+				->where('id_reto', '=', $lastID)->delete();
+
+		return $retoDlt;
+	}
+
+	public function UpdateFechaRetos($id, $fecha_inicio) {
+		$UpdFechas = DB::table('g_reto')
+					->where('id_reto', $id)
+					->update(
+						[
+							'fecha_inicio_juego' => $fecha_inicio
+						]
+					);
+
+		return $UpdFechas;
+	}
+
+	public function ObtenerPerfil($username) {
+		$sqlGanados = DB::table('g_reto')
+					->select(DB::raw('count(id_reto) as ganado'))
+					->where(
+						[
+							['usuario_retador', '=', $username],
+							['puntaje_retador', '>', 1]
+						]
+					)->orWhere(
+						[
+							['usuario_retado', '=', $username],
+							['puntaje_retado', '>', 1]
+						]
+					)->get();
+
+		$sqlPerdidos = DB::table('g_reto')
+					->select(DB::raw('count(id_reto) as perdido'))
+					->where(
+						[
+							['usuario_retador', '=', $username],
+							['puntaje_retador', '<=', 1]
+						]
+					)->orWhere(
+						[
+							['usuario_retado', '=', $username],
+							['puntaje_retado', '<=', 1]
+						]
+					)->get();
+
+		$sqlPuntaje = DB::select("SELECT ifnull((select sum(puntaje_retador) from g_reto where usuario_retador = '{$username}'), 0) + ifnull((select sum(puntaje_retado) from g_reto where usuario_retado = '{$username}'), 0) as total");
+
+		$json->Ganados = $sqlGanados;
+		$json->Perdidos = $sqlPerdidos;
+		$json->Puntaje = $sqlPuntaje;
+
+		return $json;
+	}
+
+	public function ActualizaUsuario($userid, $nik, $img) {
+		$UpdUser = DB::table('g_usuario')
+				->where('usuario_id', $userid)
+				->update(
+					[
+						'nikname' => $nik,
+						'image_avatar' => $img
+					]
+				);
+
+		return $UpdUser;
+	}
+
+	public function InsertaCodeDispositivo($userid, $identifier) {
+		$UpdDevice = DB::table('g_usuario')
+					->where('usuario_id', $userid)
+					->update(
+						[
+							'device_notification_id' => $identifier
+						]
+					);
+
+		return $UpdDevice;
+	}
+
+	public function Notificacion($toUser, $fromUser) {
+
+		define( 'API_ACCESS_KEY', 'AIzaSyCCa1aOXTCBK6an2exmaI6MEPjwqFRt-Hc');
+
+		$user = DB::table('g_usuario')
+				->select('firstname', 'device_notification_id')
+				->where('username', '=', $toUser)->get();
+
+
+		$key = $user[0]->device_notification_id;
+		$username = $user[0]->firstname;
+
+		$to = $key;
+	    $title = "Tienes un nuevo reto de {$fromUser} !!!";
+	    $message = "{$username}, un nuevo retador te ha desafiado";
+
+	    $registrationId = array($to);
+	    $msg = array(
+	        'message' => $message,
+	        'title' => $title,
+	        'vibrate' => 1,
+	        'sound' => 1
+	    );
+
+	    $fields = array(
+	        'registration_ids' => $registrationId,
+	        'data' => $msg
+	    );
+
+	    $headers = array(
+	        'Authorization: key=' . API_ACCESS_KEY,
+	        'Content-Type: application/json'
+	    );
+
+	    $ch = curl_init();
+	    curl_setopt( $ch,CURLOPT_URL, 'https://android.googleapis.com/gcm/send' );
+	    curl_setopt( $ch,CURLOPT_POST, true );
+	    curl_setopt( $ch,CURLOPT_HTTPHEADER, $headers );
+	    curl_setopt( $ch,CURLOPT_RETURNTRANSFER, true );
+	    curl_setopt( $ch,CURLOPT_SSL_VERIFYPEER, false );
+	    curl_setopt( $ch,CURLOPT_POSTFIELDS, json_encode( $fields ) );
+	    $result = curl_exec($ch );
+	    curl_close( $ch );
+
+	    return $result;
 	}
 
 }

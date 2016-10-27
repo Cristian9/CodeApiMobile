@@ -99,7 +99,7 @@ $app->post("/save_retos/", function($req, $res, $args) {
     $fecha_inicio = date('Y-m-d H:i:s');
 
     $id = saveRetos($id_reto, $uretador, $unidadId, $courseId, $uretado, $idTemageneral, $fecha_inicio);
-});*/
+});
 
 $app->post("/update_retos/", function($req, $res, $args) {
     $ujugador = $req->getParam('username');
@@ -129,7 +129,7 @@ $app->post("/registerDevice/", function($req, $res, $args){
 
 $app->post("/sendNotification/", function($req, $res, $args){
     sendPushNotification($req->getParam('toUser'), $req->getParam('fromUser'));
-});
+});*/
 
 $app->run();
 
@@ -204,8 +204,7 @@ function get_profile($username) {
     $sqlPerdidos = "SELECT count(id_reto) as perdido from g_reto where (usuario_retador = '{$username}' and puntaje_retador <= 1)
         or (usuario_retado = '{$username}' and  puntaje_retado <= 1)";
 
-    $sqlPuntaje = "SELECT ifnull((select sum(puntaje_retador) from g_reto where usuario_retador = '{$username}'), 0) + ifnull((select sum(puntaje_retado) 
-        from g_reto where usuario_retado = '{$username}'), 0) as total";
+    $sqlPuntaje = "SELECT ifnull((select sum(puntaje_retador) from g_reto where usuario_retador = '{$username}'), 0) + ifnull((select sum(puntaje_retado) from g_reto where usuario_retado = '{$username}'), 0) as total";
 
     $json->Ganados = $getDB->dataSet($sqlGanados);
     $json->Perdidos = $getDB->dataSet($sqlPerdidos);

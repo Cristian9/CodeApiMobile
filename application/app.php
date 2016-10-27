@@ -14,8 +14,8 @@ $app = new \Slim\App([
 			'driver' => 'mysql',
 			'host' => 'localhost',
 			'database' => 'db_preguntados',
-			'username' => 'admin',
-			'password' => 'd3b14nfw123',
+			'username' => 'root',
+			'password' => '',
 			'charset' => 'utf8',
 			'collation' => 'utf8_unicode_ci',
 			'prefix' => '',
@@ -42,5 +42,11 @@ $container['MainController'] = function($container){
 
 	return new \Routes\Controller\MainController($container);
 };
+
+/*$container['csrf'] = function($container) {
+	return new \Slim\Csrf\Guard;
+};
+
+$app->add($container->csrf);*/
 
 require __DIR__ . '/../routes/routes.php';
