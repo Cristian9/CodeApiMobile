@@ -1,6 +1,6 @@
 <?php
 
-date_default_timezone_set('America/Lima');
+/*date_default_timezone_set('America/Lima');
 error_reporting(E_ERROR);
 
 require 'vendor/autoload.php';
@@ -67,7 +67,7 @@ $app->post("/save_selected_rpta/", function($req, $res, $args) {
 });
 
 $app->get("/get_resumen_juego/", function($req, $res, $args){
-    getResumenJuego($req->getParam('id')/*, $req->getParam('uid')*/);
+    getResumenJuego($req->getParam('id'));
 });
 
 $app->get("/getRankingByCourse/", function($req, $res, $args){
@@ -99,7 +99,7 @@ $app->post("/save_retos/", function($req, $res, $args) {
     $fecha_inicio = date('Y-m-d H:i:s');
 
     $id = saveRetos($id_reto, $uretador, $unidadId, $courseId, $uretado, $idTemageneral, $fecha_inicio);
-});
+});*/
 
 $app->post("/update_retos/", function($req, $res, $args) {
     $ujugador = $req->getParam('username');

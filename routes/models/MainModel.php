@@ -186,4 +186,188 @@ class MainModel extends Model {
         return DB::insert($sqlInsert);
 	}
 
+	public function resumenJuego($id){
+		$sqlResumen = "SELECT (select nikname from g_usuario where username = usuario_retador) as nikRetador, (select 
+			image_avatar from g_usuario where username = usuario_retador) as myAvatar, (select nikname from g_usuario where 
+			username = usuario_retado) as nikRetado, (select image_avatar from g_usuario where username = usuario_retado) 
+			as avatarRetado, correctas_retador, if(correctas_retado = 0, '', correctas_retado) as correctas_retado, 
+			if(fecha_fin_reto = '0000-00-00 00:00:00', 'Cancelado', time_format(timediff(fecha_fin_reto, fecha_inicio_reto), 
+			concat('%im ', '%ss'))) as tiempo_juego_retador, if(jugado <> 0, time_format(timediff(fecha_fin_juego, 
+			fecha_inicio_juego), concat('%im ', '%ss')), 'Pendiente') as tiempo_juego_retado, if(jugado = 0, 
+			time_format(timediff(fecha_inicio_reto + interval 1 day, now()), concat('Faltan %Hh ', '%im para ganar')), 
+	        'Juego Finalizado') as para_ganar from g_reto where id_reto = {$id}";
+
+	    $json->Resumen = DB::select($sqlResumen);
+
+	    return $json;
+	}
+
+	public function rankingMensual($course, $year, $month) {
+		 $sqlRanking = "SELECT u.nikname, u.image_avatar, r.* from g_ranking r, g_usuario u where u.username = r.usuario_id 
+		 	and r.curso_id = '{$course}' and r.year = '{$year}' and r.month = '{$month}' order by r.puntaje desc, 
+		 	r.tiempo_jugado desc";
+
+		return DB::select($sqlRanking);
+	}
+
+	public function burbujaRetos($uname) {
+		$sqlBuble = "SELECT count(*) retos from g_reto where usuario_retado = '{$uname}' and jugado = 0";
+
+		return DB::select($sqlBuble);
+	}
+
+	public function insertarRetos($id_reto, $uretador, $unidadId, $courseId, $uretado, $idTemageneral, $fecha_inicio) {
+
+		if($id_reto == "") {
+
+			$sqlInsert = DB::table('g_reto')->insertGetId(
+				[
+					'usuario_retador' => $uretador,
+					'unidad_id' => $unidadId,
+					'curso_id' => $courseId,
+					'id_temageneral' => $idTemageneral,
+					'fecha_inicio_reto' => $fecha_inicio,
+					'usuario_retado' => $uretado
+				]
+			);
+
+	        return $sqlInsert;
+	    }
+	}
+
+	public function actualizaRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_fin) {
+		// Obteniendo datos de los usuarios que jugaron por cada reto
+		
+		$sqlGetRecord = DB::table('g_reto')
+						->select(DB::raw('*, year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as month'))
+						->where('id_reto', '=', $idQuestion)->get();
+
+		$anio = $sqlGetRecord[0]->anio;
+	    $month = $sqlGetRecord[0]->month;
+	    $uRetador = $sqlGetRecord[0]->usuario_retador;
+	    $uRetado = $sqlGetRecord[0]->usuario_retado;
+	    $uFechaIn = $sqlGetRecord[0]->fecha_inicio_reto;
+	    $unidadId = $sqlGetRecord[0]->unidad_id;
+
+
+	    if($cancelled == "") {
+
+	    	$sqlUpdate = DB::table('g_reto')
+	    				->where('id_reto', $idQuestion)
+	    				->update(
+	    					[
+	    						'correctas_retador' => $countCorrect,
+	    						'fecha_fin_reto' => $fecha_fin
+	    					]
+	    				);
+
+	    	if($uRetado == $ujugador) {
+	    		$sqlUpdate = DB::table('g_reto')
+	    				->where('id_reto', $idQuestion)
+	    				->update(
+	    					[
+	    						'correctas_retado' => $countCorrect,
+	    						'fecha_fin_juego' => $fecha_fin,
+	    						'jugado' => 1
+	    					]
+	    				);
+
+	    	}
+
+	    	if($sqlUpdate && $uRetado == $ujugador) {
+
+	    		$queryRecordRate = DB::table('g_reto')
+	    							->select(DB::raw('timediff(fecha_fin_reto, fecha_inicio_reto) as tiempo_retador, 
+	    									correctas_retador, timediff(fecha_fin_juego, fecha_inicio_juego) 
+	    									as tiempo_retado, correctas_retado'))
+	    							->where('id_reto', '=', $idQuestion)->get();
+
+	    		//Retador
+	            $puntajeRetador = $queryRecordRate[0]->correctas_retador;
+	            $tiempoRetador = $queryRecordRate[0]->tiempo_retador;
+
+	            // Retado
+	            $puntajeRetado = $queryRecordRate[0]->correctas_retado;
+	            $tiempoRetado = $queryRecordRate[0]->tiempo_retado;
+
+	            // Consultamos la cantidad de respuestas correctas y el tiempo jugado
+	            // para asignarle los puntajes a cada uno.
+
+	            $pRetador = 5;
+	            $pRetado = 1;
+
+	            if($puntajeRetador == $puntajeRetado) {
+
+	            	if ($tiempoRetador == $tiempoRetado) {
+
+	            		$sqlUpdatePuntos = DB::table('g_reto')
+	            							->where('id_reto', $idQuestion)
+	            							->update(
+
+	            								[
+	            									'puntaje_retador' => 5,
+	            									'puntaje_retado' => 2
+	            								]
+	            							);
+	            	} else {
+
+	            		$pRetador = 1;
+                    	$pRetado = 5;
+
+	            		$sqlUpdatePuntos = DB::table('g_reto')
+	            							->where('id_reto', $idQuestion)
+	            							->update(
+
+	            								[
+	            									'puntaje_retador' => 2,
+	            									'puntaje_retado' => 5
+	            								]
+	            							);
+
+	            	}
+
+	            } elseif($puntajeRetador > $puntajeRetado) {
+
+	            	$sqlUpdatePuntos = DB::table('g_reto')
+	            						->where('id_reto', $idQuestion)
+	            						->update(
+
+	            								[
+	            									'puntaje_retador' => 5,
+	            									'puntaje_retado' => 2
+	            								]
+	            							);
+	            } else {
+
+	            	$pRetador = 1;
+                	$pRetado = 5;
+
+                	$sqlUpdatePuntos = DB::table('g_reto')
+	            						->where('id_reto', $idQuestion)
+	            						->update(
+
+	            								[
+	            									'puntaje_retador' => 2,
+	            									'puntaje_retado' => 5
+	            								]
+	            							);
+	            }
+
+	            // Funcion que actualiza el ranking mensual.
+	            
+	            MainModel::actualizaRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, $unidadId, $pRetador, $pRetado, $tiempoRetador, $tiempoRetado);
+
+	    	} else {
+
+	    		$course = $sqlGetRecord[0]->curso_id;
+
+	    		$sqlRangking = DB::table('g_reto')
+	    						->where()
+	    						->get();
+	    	}
+
+	    }
+		return $cancelled;
+	}
+
 }

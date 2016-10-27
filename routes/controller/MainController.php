@@ -77,7 +77,53 @@ class MainController extends Controller {
 	}
 
 	public function resumenJuego($request, $response) {
-		
+		$id = $request->getParam('id');
+
+		$resumen = MainModel::resumenJuego($id);
+
+		echo json_encode($resumen);
+	}
+
+	public function rankingMensual($request, $response) {
+		$course = $request->getParam('courseId');
+	    $year = $request->getParam('year');
+	    $month = $request->getParam('month');
+
+	    $rankign = MainModel::rankingMensual($course, $year, $month);
+
+	    echo json_encode($rankign);
+	}
+
+	public function burbujaRetos($request, $response) {
+		$uname = $request->getParam('uname');
+
+		$buble = MainModel::burbujaRetos($uname);
+	}
+
+	public function insertarRetos($request, $response) {
+		$id_reto = $request->getParam('id_reto');
+	    $uretador = $request->getParam('user_retador');
+	    $unidadId = $request->getParam('unidad_id');
+	    $courseId = $request->getParam('courseId');
+	    $uretado = $request->getParam('user_retado');
+	    $idTemageneral = $request->getParam('id_temageneral');
+	    $fecha_inicio = date('Y-m-d H:i:s');
+
+	    $result = MainModel::insertarRetos($id_reto, $uretador, $unidadId, $courseId, $uretado, $idTemageneral, $fecha_inicio);
+
+	    echo $result;
+	}
+
+	public function actualizaRetos($request, $response) {
+		$ujugador = $request->getParam('username');
+	    $countCorrect = $request->getParam('countCorrect');
+	    $idQuestion = $request->getParam('idQuestion');
+	    $cancelled = $request->getParam('cancelled');
+	    $fecha_fin = date('Y-m-d H:i:s');
+
+	    $result = MainModel::actualizaRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_fin);
+
+	    print_r($result);
 	}
 
 	public function getYearAndMonth() {

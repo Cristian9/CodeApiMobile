@@ -12,10 +12,10 @@ $app = new \Slim\App([
 
 		'db' => [
 			'driver' => 'mysql',
-			'host' => '10.31.1.84',
+			'host' => 'localhost',
 			'database' => 'db_preguntados',
 			'username' => 'admin',
-			'password' => 'admindta',
+			'password' => 'd3b14nfw123',
 			'charset' => 'utf8',
 			'collation' => 'utf8_unicode_ci',
 			'prefix' => '',
