@@ -8,7 +8,7 @@ $app->get("/list-retos/", 'MainController:listaRetos');
 $app->get("/getQuestions/", 'MainController:cargarPreguntas');
 $app->get("/get_resumen_juego/", 'MainController:resumenJuego');
 $app->get("/getRankingByCourse/", 'MainController:rankingMensual');
-$app->get("/counter", 'MainController:burbujaRetos');
+$app->get("/counter/", 'MainController:burbujaRetos');
 $app->get("/get_profile/", 'MainController:ObtenerPerfil');
 
 $app->post("/login/", 'MainController:login');

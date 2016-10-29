@@ -18,17 +18,17 @@ class MainController extends Controller {
 	}
 
 	public function listarCursos($request, $response) {
-		$nameKey = $this->csrf->getTokenNameKey();
+		/*$nameKey = $this->csrf->getTokenNameKey();
 	    $valueKey = $this->csrf->getTokenValueKey();
 	    $name = $request->getAttribute($nameKey);
 	    $value = $request->getAttribute($valueKey);
 
 	    echo $nameKey . ' = ' . $name . PHP_EOL;
-	    echo $valueKey . ' = ' . $value;
-		/*
+	    echo $valueKey . ' = ' . $value;*/
+		
 		$courses = MainModel::listaCursos();
 
-		echo json_encode($courses);*/
+		echo json_encode($courses);
 	}
 
 	public function listarUnidad($request, $response) {
@@ -106,6 +106,8 @@ class MainController extends Controller {
 		$uname = $request->getParam('uname');
 
 		$buble = MainModel::burbujaRetos($uname);
+
+		echo json_encode($buble);
 	}
 
 	public function insertarRetos($request, $response) {
@@ -173,8 +175,9 @@ class MainController extends Controller {
 
 	public function DeleteRetoFallado($request, $response) {
 		$lastID = $request->getParam('lastID');
+		$uname = $request->getParam('uname');
 
-		$result = MainModel::DeleteRetoFallado($lastID);
+		$result = MainModel::DeleteRetoFallado($lastID, $uname);
 
 		echo $result;
 	}

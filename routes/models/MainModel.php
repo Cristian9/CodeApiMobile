@@ -211,9 +211,18 @@ class MainModel extends Model {
 	}
 
 	public function burbujaRetos($uname) {
-		$sqlBuble = "SELECT count(*) retos from g_reto where usuario_retado = '{$uname}' and jugado = 0";
 
-		return DB::select($sqlBuble);
+		$sqlBuble = DB::table('g_reto')
+					->select(DB::raw('count(*) retos'))
+					->where(
+						[
+							['usuario_retado', '=', $uname],
+							['jugado', '=', 0]
+						]
+					)->get();
+
+		return $sqlBuble;
+
 	}
 
 	public function insertarRetos($id_reto, $uretador, $unidadId, $courseId, $uretado, $idTemageneral, $fecha_inicio) {
@@ -451,9 +460,18 @@ class MainModel extends Model {
 		return $setRanking;
 	}
 
-	public function DeleteRetoFallado($lastID) {
-		$retoDlt = DB::table('g_reto')
+	public function DeleteRetoFallado($lastID, $uname) {
+
+		$retoDlt = 'not delete';
+
+		$queryReto = DB::table('g_reto')
+					->where('id_reto', '=', $lastID)
+					->get();
+
+		if($queryReto[0]->usuario_retador == $uname) {
+			$retoDlt = DB::table('g_reto')
 				->where('id_reto', '=', $lastID)->delete();
+		}
 
 		return $retoDlt;
 	}
