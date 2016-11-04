@@ -10,6 +10,7 @@ $app->get("/get_resumen_juego/", 'MainController:resumenJuego');
 $app->get("/getRankingByCourse/", 'MainController:rankingMensual');
 $app->get("/counter/", 'MainController:burbujaRetos');
 $app->get("/get_profile/", 'MainController:ObtenerPerfil');
+$app->get("/token/", "MainController:getToken");
 
 $app->post("/login/", 'MainController:login');
 $app->post("/save_selected_rpta/", 'MainController:insertarRespuestaUsuario');

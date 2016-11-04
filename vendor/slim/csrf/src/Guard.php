@@ -99,6 +99,7 @@ class Guard
             if (!array_key_exists($prefix, $_SESSION)) {
                 $_SESSION[$prefix] = [];
             }
+            
             $this->storage = &$_SESSION[$prefix];
         }
 
@@ -146,6 +147,7 @@ class Guard
             $name = isset($body[$this->prefix . '_name']) ? $body[$this->prefix . '_name'] : false;
             $value = isset($body[$this->prefix . '_value']) ? $body[$this->prefix . '_value'] : false;
             if (!$name || !$value || !$this->validateToken($name, $value)) {
+                //die($name . ' - ' . $value . ' - ' . $this->validateToken($name, $value));
                 // Need to regenerate a new token, as the validateToken removed the current one.
                 $request = $this->generateNewToken($request);
 
@@ -251,6 +253,11 @@ class Guard
      */
     protected function getFromStorage($name)
     {
+        print_r($this->storage);
+        print_r($name);
+        print_r($_SESSION['csrf']);
+        print_r($_SESSION);
+        exit;
         return isset($this->storage[$name]) ? $this->storage[$name] : false;
     }
 

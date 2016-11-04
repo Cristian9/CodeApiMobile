@@ -24,6 +24,7 @@ $app = new \Slim\App([
 
 ]);
 
+
 $container = $app->getContainer();
 
 $capsule = new \Illuminate\Database\Capsule\Manager;
@@ -39,14 +40,15 @@ $container['db'] = function($container) use ($capsule){
 };
 
 $container['MainController'] = function($container){
-
 	return new \Routes\Controller\MainController($container);
 };
 
-/*$container['csrf'] = function($container) {
+$container['csrf'] = function($container) {
 	return new \Slim\Csrf\Guard;
 };
 
-$app->add($container->csrf);*/
+$app->add(new \Routes\Middleware\CsrfMiddleware($container));
+
+$app->add($container->csrf);
 
 require __DIR__ . '/../routes/routes.php';

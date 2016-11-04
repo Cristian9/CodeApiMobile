@@ -7,24 +7,27 @@ use Routes\Models\MainModel;
 
 class MainController extends Controller {
 
+	public function getToken($request, $response) {
+		
+		$jsonToken->$_SESSION['name'] = $_SESSION['value'];
+		
+		$jsonToken->$_SESSION['csrf_name'] = $_SESSION['csrf_value'];
+
+		echo json_encode($jsonToken);
+	}
+
 	public function login($request, $response) {
 
-		$uname = $request->getParam('user');
+		/*$uname = $request->getParam('user');
 		$passw = $request->getParam('pass');
 
 		$user = MainModel::login($uname, $passw);
 
-		echo json_encode($user);
+		echo json_encode($user);*/
+		die('ok');
 	}
 
 	public function listarCursos($request, $response) {
-		/*$nameKey = $this->csrf->getTokenNameKey();
-	    $valueKey = $this->csrf->getTokenValueKey();
-	    $name = $request->getAttribute($nameKey);
-	    $value = $request->getAttribute($valueKey);
-
-	    echo $nameKey . ' = ' . $name . PHP_EOL;
-	    echo $valueKey . ' = ' . $value;*/
 		
 		$courses = MainModel::listaCursos();
 
