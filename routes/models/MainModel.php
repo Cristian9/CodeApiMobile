@@ -8,40 +8,33 @@ use Illuminate\Database\Capsule\Manager as DB;
 
 class MainModel extends Model {
 
-	public function login($uname, $pass) {
-
-		$sha1pass = sha1($pass);
+	public function login($uname) {
 
 	    $sqlUser = "SELECT usuario_id, firstname, lastname, username, nikname, email, image_avatar 
-	        FROM g_usuario WHERE username = '{$uname}' and password = '{$sha1pass}'";
+	        FROM g_usuario WHERE username = '{$uname}'";
 
-	    //$wsUrl = 'http://10.31.1.223:8051/ServiceAD.asmx?WSDL';
-	    //$isValid = $this->loginWSAuthenticate($user, $pass, $wsUrl);
-	    $isValid = 1;
-	    if ($isValid) {
+	    $exists_user = DB::select($sqlUser);
 
-	        $exists_user = DB::select($sqlUser);
-
-	        if ($exists_user) {
-
-	            return $exists_user;
-
-	        } else {
-	            return  false;
-	        }
-	    }
+	    return $exists_user;
 	}
 
 	public function listaCursos() {
-		$sqlCursos = "SELECT id, description FROM g_curso WHERE visible = 1 ORDER BY description";
+		$sqlCursos = DB::table('g_curso')
+					->select('id', 'description')
+					->where('visible', '=', 1)
+					->get();
 
-		return DB::select($sqlCursos);
+		return $sqlCursos;
 	}
 
 	public function listarUnidad($course_id) {
-		$sqlUnidad = "SELECT id, description FROM g_unidad WHERE id_curso = '{$course_id}' ORDER BY description";
+		$sqlUnidad = DB::table('g_unidad')
+					->select('id', 'description')
+					->where('id_curso', '=', $course_id)
+					->orderBy('description', 'asc')
+					->get();
 
-		return DB::select($sqlUnidad);
+		return $sqlUnidad;
 	}
 
 	public function listaUsuarios($page, $recs, $uname, $keywr) {
@@ -53,7 +46,7 @@ class MainModel extends Model {
 
 		$sqlUsuarios = "SELECT concat(firstname, ' ', lastname) as uname, nikname as usuario, username, image_avatar
 			from g_usuario where username <> '{$uname}' and active = 1 and (lastname like '%{$keywr}%' or firstname 
-			like '%{$keywr}%' or nikname like '%{$keywr}%') order by usuario_id LIMIT {$limit}, {$recs}";
+			like '%{$keywr}%') order by rand() LIMIT {$limit}, {$recs}";
 
 		return DB::select($sqlUsuarios);
 	}
@@ -258,7 +251,6 @@ class MainModel extends Model {
 	    $uFechaIn = $sqlGetRecord[0]->fecha_inicio_reto;
 	    $unidadId = $sqlGetRecord[0]->unidad_id;
 
-
 	    if($cancelled == "") {
 
 	    	if($uRetado == $ujugador) {
@@ -303,7 +295,7 @@ class MainModel extends Model {
 	            // para asignarle los puntajes a cada uno.
 
 	            $pRetador = 5;
-	            $pRetado = 1;
+	            $pRetado = 2;
 
 	            if($puntajeRetador == $puntajeRetado) {
 
@@ -320,7 +312,7 @@ class MainModel extends Model {
 	            							);
 	            	} else {
 
-	            		$pRetador = 1;
+	            		$pRetador = 2;
                     	$pRetado = 5;
 
 	            		$sqlUpdatePuntos = DB::table('g_reto')
@@ -348,7 +340,7 @@ class MainModel extends Model {
 	            							);
 	            } else {
 
-	            	$pRetador = 1;
+	            	$pRetador = 2;
                 	$pRetado = 5;
 
                 	$sqlUpdatePuntos = DB::table('g_reto')
@@ -375,7 +367,9 @@ class MainModel extends Model {
     						->where(
     							[
     								['usuario_id', '=', $ujugador],
-    								['curso_id', '=', $course]
+    								['curso_id', '=', $course],
+    								['year', '=', $anio],
+    								['month', '=', $month]
     							]
     						)
     						->get();
@@ -383,6 +377,8 @@ class MainModel extends Model {
     		if(!empty($sqlRanking)) {
 
     			$id = $sqlRanking[0]->id_ranking;
+
+    			$sqlRestaPuntajeRanking = "UPDATE g_ranking set puntaje = if((puntaje - 3) < 0, 0, (puntaje - 3)) where id_ranking = '{$id}'";
 
     			if($uRetado == $ujugador) {
 
@@ -401,13 +397,12 @@ class MainModel extends Model {
     										]
     									);
 
-    				MainModel::actualizaRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, $unidadId, 5, -3, $queryRecordRate[0]->tiempo_retador, '00:00:00');
+    				$sqlUpdateCancelled = DB::update($sqlRestaPuntajeRanking);
     			} else {
 
     				if ($sqlRanking[0]->year == $anio && $sqlRanking[0]->month == $month) {
 
-    					$sqlUpdateCancelled = DB::update("UPDATE g_ranking set puntaje = if((puntaje - 3) < 0, 0, (puntaje - 3)) 
-    											where id_ranking = '{$id}'");
+    					$sqlUpdateCancelled = DB::update($sqlRestaPuntajeRanking);
     				}
 
     				DB::table('g_reto')->where('id_reto', '=', $idQuestion)->delete();
@@ -438,7 +433,9 @@ class MainModel extends Model {
 						->where(
 							[
 								['usuario_id', '=', $username],
-								['curso_id', '=', $course]
+								['curso_id', '=', $course],
+								['year', '=', $anio],
+								['month', '=', $month]
 							]
 						)->get();
 
@@ -447,33 +444,17 @@ class MainModel extends Model {
 
 				if ($sqlRanking[0]->year == $anio && $sqlRanking[0]->month == $month) {
 					$setRanking = DB::update("UPDATE g_ranking set puntaje = (puntaje + {$puntosac}), tiempo_jugado = 
-								addtime(tiempo_jugado, '{$tiempoac}') where id_ranking = '{$id}'");
+								addtime(tiempo_jugado, '{$tiemposc}') where id_ranking = '{$id}'");
 				}
 			} else {
 
 				$setRanking = DB::insert("INSERT into g_ranking (usuario_id, curso_id, id_unidad, id_temageneral, puntaje, 
 								tiempo_jugado, year, month) values('{$username}', '{$course}', '{$unidadId}', '0', '{$puntosac}', 
-								'{$tiempoac}', '{$anio}', '{$month}')");
+								'{$tiemposc}', '{$anio}', '{$month}')");
 			}
 		}
 
 		return $setRanking;
-	}
-
-	public function DeleteRetoFallado($lastID, $uname) {
-
-		$retoDlt = 'not delete';
-
-		$queryReto = DB::table('g_reto')
-					->where('id_reto', '=', $lastID)
-					->get();
-
-		if($queryReto[0]->usuario_retador == $uname) {
-			$retoDlt = DB::table('g_reto')
-				->where('id_reto', '=', $lastID)->delete();
-		}
-
-		return $retoDlt;
 	}
 
 	public function UpdateFechaRetos($id, $fecha_inicio) {
@@ -596,6 +577,17 @@ class MainModel extends Model {
 	    curl_close( $ch );
 
 	    return $result;
+	}
+
+	public function newUser($firstname, $lastname, $username, $password, $nikname, $email){
+		$pass = sha1($password);
+		$hoy = date('Y-m-d H:i:s');
+
+		$newUser = DB::insert("INSERT INTO g_usuario (firstname, lastname, username, password, nikname, 
+					email, fecha_registro, creator_id, image_avatar, active) 
+					values ('{$firstname}', '{$lastname}', '{$username}', '{$pass}', 
+					'{$nikname}', '{$email}', '{$hoy}', '1', 'default', '1')");
+		return $newUser;
 	}
 
 }

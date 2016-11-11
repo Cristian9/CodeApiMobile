@@ -4,37 +4,45 @@
 namespace Routes\Controller;
 
 use Routes\Models\MainModel;
+use SoapClient;
+use Routes\Controller\phpseclib\Crypt\Crypt_AES;
 
 class MainController extends Controller {
 
-	public function getToken($request, $response) {
-		
-		$jsonToken->$_SESSION['name'] = $_SESSION['value'];
-		
-		$jsonToken->$_SESSION['csrf_name'] = $_SESSION['csrf_value'];
-
-		echo json_encode($jsonToken);
+	public function csrfkey($rqst) {
+		if(!isset($rqst['HTTP_KEYGAME'])) {
+			die('Debes estar logueado');
+		}
 	}
 
 	public function login($request, $response) {
 
-		/*$uname = $request->getParam('user');
+		$uname = $request->getParam('user');
 		$passw = $request->getParam('pass');
 
-		$user = MainModel::login($uname, $passw);
+		/*$wsUrl = 'http://10.31.1.223:8051/ServiceAD.asmx?WSDL';
+	    $isValid = MainController::loginWSAuthenticate($uname, $passw, $wsUrl);*/
 
-		echo json_encode($user);*/
-		die('ok');
+	    $isValid = 1;
+
+	    if ($isValid) {
+	        $user = MainModel::login($uname);
+			echo json_encode($user);
+	    }
 	}
 
 	public function listarCursos($request, $response) {
-		
+		MainController::csrfkey($request->getHeaders());
+
 		$courses = MainModel::listaCursos();
 
 		echo json_encode($courses);
 	}
 
 	public function listarUnidad($request, $response) {
+
+		MainController::csrfkey($request->getHeaders());
+
 		$course_id = $request->getParam('courseId');
 
 		$unidad_course = MainModel::listarUnidad($course_id);
@@ -43,6 +51,8 @@ class MainController extends Controller {
 	}
 
 	public function listaUsuarios($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$page = $request->getParam('page');
 		$recs = 30;
 		$uname = $request->getParam('username');
@@ -54,6 +64,8 @@ class MainController extends Controller {
 	}
 
 	public function listaRetos($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$args = $request->getParam('args');
 		$get = $request->getParam('get');
 		$id = $request->getParam('id');
@@ -65,6 +77,8 @@ class MainController extends Controller {
 	}
 
 	public function cargarPreguntas($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$course = $request->getParam('course');
 		$unidad = $request->getParam('unidad');
 
@@ -88,6 +102,8 @@ class MainController extends Controller {
 	}
 
 	public function resumenJuego($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$id = $request->getParam('id');
 
 		$resumen = MainModel::resumenJuego($id);
@@ -96,6 +112,8 @@ class MainController extends Controller {
 	}
 
 	public function rankingMensual($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$course = $request->getParam('courseId');
 	    $year = $request->getParam('year');
 	    $month = $request->getParam('month');
@@ -106,6 +124,8 @@ class MainController extends Controller {
 	}
 
 	public function burbujaRetos($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$uname = $request->getParam('uname');
 
 		$buble = MainModel::burbujaRetos($uname);
@@ -114,6 +134,8 @@ class MainController extends Controller {
 	}
 
 	public function insertarRetos($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$id_reto = $request->getParam('id_reto');
 	    $uretador = $request->getParam('user_retador');
 	    $unidadId = $request->getParam('unidad_id');
@@ -129,6 +151,8 @@ class MainController extends Controller {
 	}
 
 	public function actualizaRetos($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$ujugador = $request->getParam('username');
 	    $countCorrect = $request->getParam('countCorrect');
 	    $idQuestion = $request->getParam('idQuestion');
@@ -141,6 +165,8 @@ class MainController extends Controller {
 	}
 
 	public function UpdateFechaRetos($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$id = $request->getParam('idReto');
 		$fecha_inicio = date('Y-m-d H:i:s');
 
@@ -150,6 +176,8 @@ class MainController extends Controller {
 	}
 
 	public function ObtenerPerfil($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$username = $request->getParam('username');
 
 		$profile = MainModel::ObtenerPerfil($username);
@@ -158,6 +186,8 @@ class MainController extends Controller {
 	}
 
 	public function ActualizaUsuario($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$userid = $request->getParam('userid');
 		$nik = $request->getParam('niknam');
 		$img = $request->getParam('image');
@@ -168,19 +198,12 @@ class MainController extends Controller {
 	}
 
 	public function InsertaCodeDispositivo($request, $response) {
+		MainController::csrfkey($request->getHeaders());
+
 		$userid = $request->getParam('userid');
 		$identifier = $request->getParam('identifier');
 
 		$result = MainModel::InsertaCodeDispositivo($userid, $identifier);
-
-		echo $result;
-	}
-
-	public function DeleteRetoFallado($request, $response) {
-		$lastID = $request->getParam('lastID');
-		$uname = $request->getParam('uname');
-
-		$result = MainModel::DeleteRetoFallado($lastID, $uname);
 
 		echo $result;
 	}
@@ -194,7 +217,10 @@ class MainController extends Controller {
 		print_r($result);
 	}
 
-	public function getYearAndMonth() {
+	public function getYearAndMonth($request, $response) {
+
+		MainController::csrfkey($request->getHeaders());
+
 		$currentYear = date('Y');
 	    $pastYear = $currentYear - 3;
 	    
@@ -215,5 +241,76 @@ class MainController extends Controller {
 
 	    echo json_encode($json);
 	}
+
+	public function newUser($request, $response) {
+		$firstname = $request->getParam('firstname');
+		$lastname = $request->getParam('lastname');
+		$username = $request->getParam('username');
+		$password = $request->getParam('password');
+		$nikname = $request->getParam('nikname');
+		$email = $request->getParam('email');
+		
+		$result = MainModel::newUser($firstname, $lastname, $username, $password, $nikname, $email);
+
+		echo $result;
+	}
+
+	public function loginWSAuthenticate($username, $password, $wsUrl) {
+        // check params
+        if (empty($username) or empty($password) or empty($wsUrl)) {
+            return false;
+        }
+        // Create new SOAP client instance
+        $client = new SoapClient($wsUrl, array('trace' => true, 'exceptions' => true));
+        if (!$client) {
+            error_log('Could not instanciate SOAP client with URL ' . $wsUrl);
+            return false;
+        }
+        // Include phpseclib methods, because of a bug with AES/CFB in mcrypt
+        include_once dirname(__FILE__) . '/phpseclib/Crypt/AES.php';
+
+        error_log("dsdsd");
+        // Define all elements necessary to the encryption
+        $key = '-+*%$({[]})$%*+-';
+        // Complete password con PKCS7-specific padding
+        $blockSize = 16;
+        $padding = $blockSize - (strlen($password) % $blockSize);
+        $password .= str_repeat(chr($padding), $padding);
+        $cipher = new Crypt_AES(CRYPT_AES_MODE_CFB);
+        $cipher->setKeyLength(128);
+        $cipher->setKey($key);
+        $cipher->setIV($key);
+
+        $cipheredPass = $cipher->encrypt($password);
+
+        // Mcrypt call left for documentation purposes - broken, see https://bugs.php.net/bug.php?id=51146
+        //$cipheredPass = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $password,  MCRYPT_MODE_CFB, $key);
+        // Following lines present for debug purposes only
+        /*
+          $arr = preg_split('//', $cipheredPass, -1, PREG_SPLIT_NO_EMPTY);
+          foreach ($arr as $char) {
+          error_log(ord($char));
+          }
+         */
+        // Change to base64 to avoid communication alteration
+        $passCrypted = base64_encode($cipheredPass);
+        //error_log($passCrypted);
+        // The call to the webservice will change depending on your definition
+        try {
+            $response = $client->validaUsuarioAD(array('usuario' => $username, 'contrasenia' => $passCrypted, 'sistema' => 'desafioutp'));
+
+        } catch (SoapFault $fault) {
+            error_log('Caught something');
+            if ($fault->faultstring != 'Could not connect to host') {
+                error_log('Not a connection problem');
+                throw $fault;
+            } else {
+                error_log('Could not connect to WS host');
+            }
+            return 0;
+        }
+        //error_log(print_r($response,1));
+        return $response->validaUsuarioADResult;
+    }
 
 }

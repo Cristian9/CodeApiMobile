@@ -10,7 +10,6 @@ $app->get("/get_resumen_juego/", 'MainController:resumenJuego');
 $app->get("/getRankingByCourse/", 'MainController:rankingMensual');
 $app->get("/counter/", 'MainController:burbujaRetos');
 $app->get("/get_profile/", 'MainController:ObtenerPerfil');
-$app->get("/token/", "MainController:getToken");
 
 $app->post("/login/", 'MainController:login');
 $app->post("/save_selected_rpta/", 'MainController:insertarRespuestaUsuario');
@@ -20,4 +19,4 @@ $app->post("/updateDateReto/", 'MainController:UpdateFechaRetos');
 $app->post("/change_nick/", 'MainController:ActualizaUsuario');
 $app->post("/registerDevice/", 'MainController:InsertaCodeDispositivo');
 $app->post("/sendNotification/", 'MainController:Notificacion');
-$app->post("/delete_reto/", 'MainController:DeleteRetoFallado');
+$app->post("/new-user/", 'MainController:newUser');
