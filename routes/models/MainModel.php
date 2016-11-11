@@ -10,7 +10,7 @@ class MainModel extends Model {
 
 	public function login($uname) {
 
-	    $sqlUser = "SELECT usuario_id, firstname, lastname, username, nikname, email, image_avatar 
+	    $sqlUser = "SELECT usuario_id, firstname, lastname, username, nikname, email, image_avatar
 	        FROM g_usuario WHERE username = '{$uname}'";
 
 	    $exists_user = DB::select($sqlUser);
@@ -45,7 +45,7 @@ class MainModel extends Model {
 	    }
 
 		$sqlUsuarios = "SELECT concat(firstname, ' ', lastname) as uname, nikname as usuario, username, image_avatar
-			from g_usuario where username <> '{$uname}' and active = 1 and (lastname like '%{$keywr}%' or firstname 
+			from g_usuario where username <> '{$uname}' and active = 1 and (lastname like '%{$keywr}%' or firstname
 			like '%{$keywr}%') order by rand() LIMIT {$limit}, {$recs}";
 
 		return DB::select($sqlUsuarios);
@@ -55,26 +55,26 @@ class MainModel extends Model {
 
 		switch ($get) {
 			case 'all':
-				
+
 				/********* Verifica si algún reto, enviado o recibido esta fuera de fecha ****/
 	            MainModel::verificarRetoFueraFecha($user);
 	            /*****************************************/
 
-	            $sqlRetosEnviados = "SELECT r.id_reto, r.usuario_retador, r.unidad_id, r.curso_id, r.id_temageneral, r.fecha_inicio_reto, 
-	                r.usuario_retado, u.nikname, r.jugado, (select image_avatar from g_usuario where username = r.usuario_retado) as avatar, 
-	                time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as para_ganar 
+	            $sqlRetosEnviados = "SELECT r.id_reto, r.usuario_retador, r.unidad_id, r.curso_id, r.id_temageneral, r.fecha_inicio_reto,
+	                r.usuario_retado, u.nikname, r.jugado, (select image_avatar from g_usuario where username = r.usuario_retado) as avatar,
+	                time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as para_ganar
 	                from g_reto r, g_usuario u where r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 0";
 
 	            $sqlRetosRecibidos = "SELECT  r.id_reto, r.usuario_retador, u.nikname, r.unidad_id, r.curso_id, r.id_temageneral,
-	                    r.fecha_inicio_reto, r.usuario_retado, r.jugado, (select image_avatar from g_usuario where username = r.usuario_retador) 
-	                    as avatar, time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as 
+	                    r.fecha_inicio_reto, r.usuario_retado, r.jugado, (select image_avatar from g_usuario where username = r.usuario_retador)
+	                    as avatar, time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as
 	                    para_perder from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 0";
 
-	            $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen, if(r.puntaje_retador > 
-	                r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where r.usuario_retado = u.username 
-	                and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador as usuario, 
-	                u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado 
-	                from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 
+	            $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen, if(r.puntaje_retador >
+	                r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where r.usuario_retado = u.username
+	                and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador as usuario,
+	                u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado
+	                from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1
 	                order by id_reto desc limit 0, 10";
 
 	            $json->Enviado = DB::select($sqlRetosEnviados);
@@ -94,31 +94,31 @@ class MainModel extends Model {
 	                $limite = ($page - 1) * 10;
 	            }
 
-	            $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen, 
-	            	if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where 
-	            	r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador 
-	            	as usuario, u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') 
-	                as resultado from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 
+	            $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen,
+	            	if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where
+	            	r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador
+	            	as usuario, u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido')
+	                as resultado from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1
 	                order by id_reto desc limit {$limite}, 10";
 
 	            $json->Historial = DB::select($sqlRetosHistorial);
 	            break;
-			
+
 			default:
-				$sqlDetalle = "SELECT r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, (select image_avatar 
-		            from g_usuario where username = '{$user}') as myAvatar, r.usuario_retado as rival, u.nikname, u.image_avatar, 'Enviado' 
-		            as origen, if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado, r.correctas_retador as 
-		            mis_correctas, r.puntaje_retador as mi_punto, r.correctas_retado as correctas_rival, r.puntaje_retado as punto_rival, 
+				$sqlDetalle = "SELECT r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, (select image_avatar
+		            from g_usuario where username = '{$user}') as myAvatar, r.usuario_retado as rival, u.nikname, u.image_avatar, 'Enviado'
+		            as origen, if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado, r.correctas_retador as
+		            mis_correctas, r.puntaje_retador as mi_punto, r.correctas_retado as correctas_rival, r.puntaje_retado as punto_rival,
 		            time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as miTiempo, time_format(timediff
 		            (r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) as tiempoRival from g_reto r, g_usuario u
 		             where r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 1 and r.id_reto = {$id}
 		            union
-		            select r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, (select image_avatar from g_usuario 
-		            where username = '{$user}') as myAvatar, r.usuario_retador as rival, u.nikname, u.image_avatar, 'Recibido' as origen, 
-		            if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado, r.correctas_retado as mis_correctas, 
+		            select r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, (select image_avatar from g_usuario
+		            where username = '{$user}') as myAvatar, r.usuario_retador as rival, u.nikname, u.image_avatar, 'Recibido' as origen,
+		            if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado, r.correctas_retado as mis_correctas,
 		            r.puntaje_retado as mi_punto, r.correctas_retador as correctas_retado, r.puntaje_retador as punto_rival, time_format(timediff
-		            (r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) as miTiempo, time_format(timediff(r.fecha_fin_reto, 
-		            r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as tiempoRival from g_reto r, g_usuario u where r.usuario_retador = 
+		            (r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) as miTiempo, time_format(timediff(r.fecha_fin_reto,
+		            r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as tiempoRival from g_reto r, g_usuario u where r.usuario_retador =
 		            u.username and r.usuario_retado = '{$user}' and r.jugado = 1 and r.id_reto = {$id} order by id_reto";
 
 	            $json->Detalle = DB::select($sqlDetalle);
@@ -129,21 +129,21 @@ class MainModel extends Model {
 	}
 
 	public function verificarRetoFueraFecha($user){
-		$sqlVerifica = "SELECT id_reto, correctas_retador as correctas, if(unix_timestamp(fecha_inicio_reto + interval 1 day) - 
+		$sqlVerifica = "SELECT id_reto, correctas_retador as correctas, if(unix_timestamp(fecha_inicio_reto + interval 1 day) -
         unix_timestamp(now()) <= 0, 'yes', 'not') as actualizar from g_reto where usuario_retador = '{$user}' and jugado = 0
         union
-        select id_reto, correctas_retador as correctas, if(unix_timestamp(fecha_inicio_reto + interval 1 day) - 
+        select id_reto, correctas_retador as correctas, if(unix_timestamp(fecha_inicio_reto + interval 1 day) -
         unix_timestamp(now()) <= 0, 'yes', 'not') as actualizar from g_reto where usuario_retado = '{$user}' and jugado = 0";
 
 	    $queryVerifica = DB::select($sqlVerifica);
-	    
+
 	    for ($i = 0; $i < count($queryVerifica); $i++) {
 	        if ($queryVerifica[$i]->actualizar == "yes") {
 
 	            $idreto = $queryVerifica[$i]->id_reto;
 	            $punto_retador = ($queryVerifica[$i]->correctas >= 1) ? 5 : 0;
 
-	            $sqlUpdate = "UPDATE g_reto set puntaje_retador = '{$punto_retador}', fecha_inicio_juego = now(), fecha_fin_juego = 
+	            $sqlUpdate = "UPDATE g_reto set puntaje_retador = '{$punto_retador}', fecha_inicio_juego = now(), fecha_fin_juego =
 	                now(), correctas_retado = '0', puntaje_retado = '0', jugado = 1 where id_reto = '{$idreto}'";
 
 	            DB::update($sqlUpdate);
@@ -152,7 +152,7 @@ class MainModel extends Model {
 	}
 
 	public function cargarPreguntas($course, $unidad) {
-		$sql = "SELECT id_preguntas, preguntas FROM g_preguntas WHERE 
+		$sql = "SELECT id_preguntas, preguntas FROM g_preguntas WHERE
             course_id = '{$course}' and id_unidad = '{$unidad}' order by rand() limit 5";
 
 	    $query = DB::select($sql);
@@ -180,14 +180,14 @@ class MainModel extends Model {
 	}
 
 	public function resumenJuego($id){
-		$sqlResumen = "SELECT (select nikname from g_usuario where username = usuario_retador) as nikRetador, (select 
-			image_avatar from g_usuario where username = usuario_retador) as myAvatar, (select nikname from g_usuario where 
-			username = usuario_retado) as nikRetado, (select image_avatar from g_usuario where username = usuario_retado) 
-			as avatarRetado, correctas_retador, if(correctas_retado = 0, '', correctas_retado) as correctas_retado, 
-			if(fecha_fin_reto = '0000-00-00 00:00:00', 'Cancelado', time_format(timediff(fecha_fin_reto, fecha_inicio_reto), 
-			concat('%im ', '%ss'))) as tiempo_juego_retador, if(jugado <> 0, time_format(timediff(fecha_fin_juego, 
-			fecha_inicio_juego), concat('%im ', '%ss')), 'Pendiente') as tiempo_juego_retado, if(jugado = 0, 
-			time_format(timediff(fecha_inicio_reto + interval 1 day, now()), concat('Faltan %Hh ', '%im para ganar')), 
+		$sqlResumen = "SELECT (select nikname from g_usuario where username = usuario_retador) as nikRetador, (select
+			image_avatar from g_usuario where username = usuario_retador) as myAvatar, (select nikname from g_usuario where
+			username = usuario_retado) as nikRetado, (select image_avatar from g_usuario where username = usuario_retado)
+			as avatarRetado, correctas_retador, if(correctas_retado = 0, '', correctas_retado) as correctas_retado,
+			if(fecha_fin_reto = '0000-00-00 00:00:00', 'Cancelado', time_format(timediff(fecha_fin_reto, fecha_inicio_reto),
+			concat('%im ', '%ss'))) as tiempo_juego_retador, if(jugado <> 0, time_format(timediff(fecha_fin_juego,
+			fecha_inicio_juego), concat('%im ', '%ss')), 'Pendiente') as tiempo_juego_retado, if(jugado = 0,
+			time_format(timediff(fecha_inicio_reto + interval 1 day, now()), concat('Faltan %Hh ', '%im para ganar')),
 	        'Juego Finalizado') as para_ganar from g_reto where id_reto = {$id}";
 
 	    $json->Resumen = DB::select($sqlResumen);
@@ -196,8 +196,8 @@ class MainModel extends Model {
 	}
 
 	public function rankingMensual($course, $year, $month) {
-		 $sqlRanking = "SELECT u.nikname, u.image_avatar, r.* from g_ranking r, g_usuario u where u.username = r.usuario_id 
-		 	and r.curso_id = '{$course}' and r.year = '{$year}' and r.month = '{$month}' order by r.puntaje desc, 
+		 $sqlRanking = "SELECT u.nikname, u.image_avatar, r.* from g_ranking r, g_usuario u where u.username = r.usuario_id
+		 	and r.curso_id = '{$course}' and r.year = '{$year}' and r.month = '{$month}' order by r.puntaje desc,
 		 	r.tiempo_jugado desc";
 
 		return DB::select($sqlRanking);
@@ -238,13 +238,13 @@ class MainModel extends Model {
 	}
 
 	public function actualizaRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_fin) {
-		// Obteniendo datos de los usuarios que jugaron por cada reto
-		
-		$sqlGetRecord = DB::table('g_reto')
-						->select(DB::raw('*, year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as month'))
-						->where('id_reto', '=', $idQuestion)->get();
+		  // Obteniendo datos de los usuarios que jugaron por cada reto
 
-		$anio = $sqlGetRecord[0]->anio;
+			$sqlGetRecord = DB::table('g_reto')
+							->select(DB::raw('*, year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as month'))
+							->where('id_reto', '=', $idQuestion)->get();
+
+			$anio = $sqlGetRecord[0]->anio;
 	    $month = $sqlGetRecord[0]->month;
 	    $uRetador = $sqlGetRecord[0]->usuario_retador;
 	    $uRetado = $sqlGetRecord[0]->usuario_retado;
@@ -278,8 +278,8 @@ class MainModel extends Model {
 	    	if($sqlUpdate && $uRetado == $ujugador) {
 
 	    		$queryRecordRate = DB::table('g_reto')
-	    							->select(DB::raw('timediff(fecha_fin_reto, fecha_inicio_reto) as tiempo_retador, 
-	    									correctas_retador, timediff(fecha_fin_juego, fecha_inicio_juego) 
+	    							->select(DB::raw('timediff(fecha_fin_reto, fecha_inicio_reto) as tiempo_retador,
+	    									correctas_retador, timediff(fecha_fin_juego, fecha_inicio_juego)
 	    									as tiempo_retado, correctas_retado'))
 	    							->where('id_reto', '=', $idQuestion)->get();
 
@@ -355,9 +355,9 @@ class MainModel extends Model {
 	            }
 
 	            // Funcion que actualiza el ranking mensual.
-	            
+
 	            MainModel::actualizaRanking($uRetador, $uRetado, $uFechaIn, $idQuestion, $unidadId, $pRetador, $pRetado, $tiempoRetador, $tiempoRetado);
-	    	} 
+	    	}
 
 	    } else {
 
@@ -407,52 +407,53 @@ class MainModel extends Model {
 
     				DB::table('g_reto')->where('id_reto', '=', $idQuestion)->delete();
     			}
-    		} 
+    		}
 	    }
 	}
 
 	public function actualizaRanking($retador, $retado, $fecha, $idreto, $unidadId, $pRetador, $pRetado, $timeRetador, $timeRetado) {
-		$sqlVerificaFecha = DB::table('g_reto')
-							->select(DB::raw('year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as mes, curso_id'))
-							->where('id_reto', '=', $idreto)->get();
 
-		$anio = $sqlVerificaFecha[0]->anio;
-		$month = $sqlVerificaFecha[0]->mes;
-		$course = $sqlVerificaFecha[0]->curso_id;
+			$sqlVerificaFecha = DB::table('g_reto')
+								->select(DB::raw('year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as mes, curso_id'))
+								->where('id_reto', '=', $idreto)->get();
 
-		$usuarios = array($retador, $retado);
-		$puntaje = array($pRetador, $pRetado);
-		$tiempos = array($timeRetador, $timeRetado);
+			$anio = $sqlVerificaFecha[0]->anio;
+			$month = $sqlVerificaFecha[0]->mes;
+			$course = $sqlVerificaFecha[0]->curso_id;
 
-		for($i = 0; $i < count($usuarios); $i++) {
-			$username = $usuarios[$i];
-			$puntosac = $puntaje[$i];
-			$tiemposc = $tiempos[$i];
+			$usuarios = array($retador, $retado);
+			$puntaje = array($pRetador, $pRetado);
+			$tiempos = array($timeRetador, $timeRetado);
 
-			$sqlRanking = DB::table('g_ranking')
-						->where(
-							[
-								['usuario_id', '=', $username],
-								['curso_id', '=', $course],
-								['year', '=', $anio],
-								['month', '=', $month]
-							]
-						)->get();
+			for($i = 0; $i < count($usuarios); $i++) {
+					$username = $usuarios[$i];
+					$puntosac = $puntaje[$i];
+					$tiemposc = $tiempos[$i];
 
-			if(!empty($sqlRanking)) {
-				$id = $sqlRanking[0]->id_ranking;
+					$sqlRanking = DB::table('g_ranking')
+								->where(
+									[
+										['usuario_id', '=', $username],
+										['curso_id', '=', $course],
+										['year', '=', $anio],
+										['month', '=', $month]
+									]
+								)->get();
 
-				if ($sqlRanking[0]->year == $anio && $sqlRanking[0]->month == $month) {
-					$setRanking = DB::update("UPDATE g_ranking set puntaje = (puntaje + {$puntosac}), tiempo_jugado = 
-								addtime(tiempo_jugado, '{$tiemposc}') where id_ranking = '{$id}'");
-				}
-			} else {
+					if(!empty($sqlRanking[0])) {
+						$id = $sqlRanking[0]->id_ranking;
 
-				$setRanking = DB::insert("INSERT into g_ranking (usuario_id, curso_id, id_unidad, id_temageneral, puntaje, 
-								tiempo_jugado, year, month) values('{$username}', '{$course}', '{$unidadId}', '0', '{$puntosac}', 
-								'{$tiemposc}', '{$anio}', '{$month}')");
+						if ($sqlRanking[0]->year == $anio && $sqlRanking[0]->month == $month) {
+							$setRanking = DB::update("UPDATE g_ranking set puntaje = (puntaje + {$puntosac}), tiempo_jugado =
+										addtime(tiempo_jugado, '{$tiemposc}') where id_ranking = '{$id}'");
+						}
+					} else {
+
+						$setRanking = DB::insert("INSERT into g_ranking (usuario_id, curso_id, id_unidad, id_temageneral, puntaje,
+										tiempo_jugado, year, month) values('{$username}', '{$course}', '{$unidadId}', '0', '{$puntosac}',
+										'{$tiemposc}', '{$anio}', '{$month}')");
+					}
 			}
-		}
 
 		return $setRanking;
 	}
@@ -475,12 +476,12 @@ class MainModel extends Model {
 					->where(
 						[
 							['usuario_retador', '=', $username],
-							['puntaje_retador', '>', 1]
+							['puntaje_retador', '>', 2]
 						]
 					)->orWhere(
 						[
 							['usuario_retado', '=', $username],
-							['puntaje_retado', '>', 1]
+							['puntaje_retado', '>', 2]
 						]
 					)->get();
 
@@ -489,16 +490,18 @@ class MainModel extends Model {
 					->where(
 						[
 							['usuario_retador', '=', $username],
-							['puntaje_retador', '<=', 1]
+							['puntaje_retador', '<=', 2]
 						]
 					)->orWhere(
 						[
 							['usuario_retado', '=', $username],
-							['puntaje_retado', '<=', 1]
+							['puntaje_retado', '<=', 2]
 						]
 					)->get();
 
-		$sqlPuntaje = DB::select("SELECT ifnull((select sum(puntaje_retador) from g_reto where usuario_retador = '{$username}'), 0) + ifnull((select sum(puntaje_retado) from g_reto where usuario_retado = '{$username}'), 0) as total");
+		$sqlPuntaje = DB::select("SELECT ifnull((select sum(puntaje_retador)
+				from g_reto where usuario_retador = '{$username}'), 0) + ifnull((select sum(puntaje_retado)
+				from g_reto where usuario_retado = '{$username}'), 0) as total");
 
 		$json->Ganados = $sqlGanados;
 		$json->Perdidos = $sqlPerdidos;
@@ -583,9 +586,9 @@ class MainModel extends Model {
 		$pass = sha1($password);
 		$hoy = date('Y-m-d H:i:s');
 
-		$newUser = DB::insert("INSERT INTO g_usuario (firstname, lastname, username, password, nikname, 
-					email, fecha_registro, creator_id, image_avatar, active) 
-					values ('{$firstname}', '{$lastname}', '{$username}', '{$pass}', 
+		$newUser = DB::insert("INSERT INTO g_usuario (firstname, lastname, username, password, nikname,
+					email, fecha_registro, creator_id, image_avatar, active)
+					values ('{$firstname}', '{$lastname}', '{$username}', '{$pass}',
 					'{$nikname}', '{$email}', '{$hoy}', '1', 'default', '1')");
 		return $newUser;
 	}

@@ -151,9 +151,9 @@ class MainController extends Controller {
 	}
 
 	public function actualizaRetos($request, $response) {
-		MainController::csrfkey($request->getHeaders());
+			MainController::csrfkey($request->getHeaders());
 
-		$ujugador = $request->getParam('username');
+			$ujugador = $request->getParam('username');
 	    $countCorrect = $request->getParam('countCorrect');
 	    $idQuestion = $request->getParam('idQuestion');
 	    $cancelled = $request->getParam('cancelled');
@@ -223,7 +223,7 @@ class MainController extends Controller {
 
 		$currentYear = date('Y');
 	    $pastYear = $currentYear - 3;
-	    
+
 	    for($pastYear; $pastYear <= $currentYear; $pastYear++) {
 	        $year[$pastYear] = $pastYear;
 	    }
@@ -249,7 +249,7 @@ class MainController extends Controller {
 		$password = $request->getParam('password');
 		$nikname = $request->getParam('nikname');
 		$email = $request->getParam('email');
-		
+
 		$result = MainModel::newUser($firstname, $lastname, $username, $password, $nikname, $email);
 
 		echo $result;
