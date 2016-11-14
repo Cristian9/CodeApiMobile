@@ -149,6 +149,32 @@ class MainModel extends Model {
 	            DB::update($sqlUpdate);
 	        }
 	    }
+
+	    $getResumenReto = DB::table('g_reto')
+	    				->select(DB::raw('id_reto, usuario_retador, usuario_retado, fecha_inicio_reto, 
+	    								unidad_id, puntaje_retador, puntaje_retado, timediff(fecha_fin_reto, 
+	    								fecha_inicio_reto) as tiempo_retador, timediff(fecha_fin_juego, fecha_inicio_juego) 
+	    								as tiempo_retado'))
+	    				->where(
+	    					[
+	    						['usuario_retador', '=', $user],
+	    						['jugado', '=', 1]
+	    					]
+	    				)->get();
+
+	    for($i = 0; $i < count($getResumenReto); $i++) {
+	    	$retador 		= 	$getResumenReto[$i]->usuario_retador;
+		    $retado 		= 	$getResumenReto[$i]->usuario_retado;
+		    $fecha 			= 	$getResumenReto[$i]->fecha_inicio_reto;
+		    $idreto 		= 	$getResumenReto[$i]->id_reto;
+		    $unidadId 		= 	$getResumenReto[$i]->unidad_id;
+		    $pRetador 		= 	$getResumenReto[$i]->puntaje_retador;
+		    $pRetado 		= 	$getResumenReto[$i]->puntaje_retado;
+		    $timeRetador 	= 	$getResumenReto[$i]->tiempo_retador;
+		    $timeRetado 	= 	$getResumenReto[$i]->tiempoRetado;
+
+		    MainModel::actualizaRanking($retador, $retado, $fecha, $idreto, $unidadId, $pRetador, $pRetado, $timeRetador, $timeRetado);
+	    }
 	}
 
 	public function cargarPreguntas($course, $unidad) {
@@ -238,13 +264,13 @@ class MainModel extends Model {
 	}
 
 	public function actualizaRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_fin) {
-		  // Obteniendo datos de los usuarios que jugaron por cada reto
+		 // Obteniendo datos de los usuarios que jugaron por cada reto
 
-			$sqlGetRecord = DB::table('g_reto')
-							->select(DB::raw('*, year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as month'))
-							->where('id_reto', '=', $idQuestion)->get();
+		$sqlGetRecord = DB::table('g_reto')
+					->select(DB::raw('*, year(fecha_inicio_reto) as anio, month(fecha_inicio_reto) as month'))
+					->where('id_reto', '=', $idQuestion)->get();
 
-			$anio = $sqlGetRecord[0]->anio;
+		$anio = $sqlGetRecord[0]->anio;
 	    $month = $sqlGetRecord[0]->month;
 	    $uRetador = $sqlGetRecord[0]->usuario_retador;
 	    $uRetado = $sqlGetRecord[0]->usuario_retado;
@@ -548,8 +574,8 @@ class MainModel extends Model {
 		$username = $user[0]->firstname;
 
 		$to = $key;
-	    $title = "Tienes un nuevo reto de {$fromUser} !!!";
-	    $message = "{$username}, un nuevo retador te ha desafiado";
+	    $title = "{$fromUser} te ha retado!!!";
+	    $message = "{$username}, acepta el desafío y vencelo!!!";
 
 	    $registrationId = array($to);
 	    $msg = array(

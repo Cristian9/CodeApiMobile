@@ -314,7 +314,7 @@ class Guard
         if (is_null($this->failureCallable)) {
             $this->failureCallable = function (ServerRequestInterface $request, ResponseInterface $response, $next) {
                 $body = new \Slim\Http\Body(fopen('php://temp', 'r+'));
-                $body->write('Failed CSRF check!');
+                $body->write('Necesitas estar logueado!!!');
                 return $response->withStatus(400)->withHeader('Content-type', 'text/plain')->withBody($body);
             };
         }

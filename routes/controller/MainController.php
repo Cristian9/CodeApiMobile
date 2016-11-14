@@ -9,10 +9,16 @@ use Routes\Controller\phpseclib\Crypt\Crypt_AES;
 
 class MainController extends Controller {
 
-	public function csrfkey($rqst) {
-		if(!isset($rqst['HTTP_KEYGAME'])) {
-			die('Debes estar logueado');
-		}
+	public function getTokenCsrf($request, $response) {
+		$nameKey = $this->csrf->getTokenNameKey();
+	    $valueKey = $this->csrf->getTokenValueKey();
+	    $name = $request->getAttribute($nameKey);
+	    $value = $request->getAttribute($valueKey);
+
+	    $jsonToken->$nameKey = $name;
+	    $jsonToken->$valueKey = $value;
+
+	    echo json_encode($jsonToken);
 	}
 
 	public function login($request, $response) {
@@ -32,16 +38,13 @@ class MainController extends Controller {
 	}
 
 	public function listarCursos($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$courses = MainModel::listaCursos();
 
 		echo json_encode($courses);
 	}
 
-	public function listarUnidad($request, $response) {
-
-		MainController::csrfkey($request->getHeaders());
+	public function listarUnidad($request, $response) {	
 
 		$course_id = $request->getParam('courseId');
 
@@ -51,8 +54,7 @@ class MainController extends Controller {
 	}
 
 	public function listaUsuarios($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$page = $request->getParam('page');
 		$recs = 30;
 		$uname = $request->getParam('username');
@@ -64,8 +66,7 @@ class MainController extends Controller {
 	}
 
 	public function listaRetos($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$args = $request->getParam('args');
 		$get = $request->getParam('get');
 		$id = $request->getParam('id');
@@ -77,8 +78,7 @@ class MainController extends Controller {
 	}
 
 	public function cargarPreguntas($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$course = $request->getParam('course');
 		$unidad = $request->getParam('unidad');
 
@@ -102,8 +102,7 @@ class MainController extends Controller {
 	}
 
 	public function resumenJuego($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$id = $request->getParam('id');
 
 		$resumen = MainModel::resumenJuego($id);
@@ -112,8 +111,7 @@ class MainController extends Controller {
 	}
 
 	public function rankingMensual($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$course = $request->getParam('courseId');
 	    $year = $request->getParam('year');
 	    $month = $request->getParam('month');
@@ -124,8 +122,7 @@ class MainController extends Controller {
 	}
 
 	public function burbujaRetos($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$uname = $request->getParam('uname');
 
 		$buble = MainModel::burbujaRetos($uname);
@@ -134,8 +131,7 @@ class MainController extends Controller {
 	}
 
 	public function insertarRetos($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$id_reto = $request->getParam('id_reto');
 	    $uretador = $request->getParam('user_retador');
 	    $unidadId = $request->getParam('unidad_id');
@@ -151,9 +147,8 @@ class MainController extends Controller {
 	}
 
 	public function actualizaRetos($request, $response) {
-			MainController::csrfkey($request->getHeaders());
-
-			$ujugador = $request->getParam('username');
+			
+		$ujugador = $request->getParam('username');
 	    $countCorrect = $request->getParam('countCorrect');
 	    $idQuestion = $request->getParam('idQuestion');
 	    $cancelled = $request->getParam('cancelled');
@@ -165,8 +160,7 @@ class MainController extends Controller {
 	}
 
 	public function UpdateFechaRetos($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$id = $request->getParam('idReto');
 		$fecha_inicio = date('Y-m-d H:i:s');
 
@@ -176,8 +170,7 @@ class MainController extends Controller {
 	}
 
 	public function ObtenerPerfil($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$username = $request->getParam('username');
 
 		$profile = MainModel::ObtenerPerfil($username);
@@ -186,8 +179,7 @@ class MainController extends Controller {
 	}
 
 	public function ActualizaUsuario($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$userid = $request->getParam('userid');
 		$nik = $request->getParam('niknam');
 		$img = $request->getParam('image');
@@ -198,8 +190,7 @@ class MainController extends Controller {
 	}
 
 	public function InsertaCodeDispositivo($request, $response) {
-		MainController::csrfkey($request->getHeaders());
-
+		
 		$userid = $request->getParam('userid');
 		$identifier = $request->getParam('identifier');
 
@@ -218,8 +209,6 @@ class MainController extends Controller {
 	}
 
 	public function getYearAndMonth($request, $response) {
-
-		MainController::csrfkey($request->getHeaders());
 
 		$currentYear = date('Y');
 	    $pastYear = $currentYear - 3;

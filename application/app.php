@@ -43,4 +43,10 @@ $container['MainController'] = function($container){
 	return new \Routes\Controller\MainController($container);
 };
 
+$container['csrf'] = function($container){
+	return new \Slim\Csrf\Guard;
+};
+
+$app->add($container->csrf);
+
 require __DIR__ . '/../routes/routes.php';
