@@ -208,7 +208,7 @@ class MainController extends Controller {
 		print_r($result);
 	}
 
-	public function getYearAndMonth($request, $response) {
+	public function getDateRanking($request, $response) {
 
 		$currentYear = date('Y');
 	    $pastYear = $currentYear - 3;

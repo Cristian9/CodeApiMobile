@@ -147,33 +147,31 @@ class MainModel extends Model {
 	                now(), correctas_retado = '0', puntaje_retado = '0', jugado = 1 where id_reto = '{$idreto}'";
 
 	            DB::update($sqlUpdate);
-	        }
-	    }
 
-	    $getResumenReto = DB::table('g_reto')
+	            $getResumenReto = DB::table('g_reto')
 	    				->select(DB::raw('id_reto, usuario_retador, usuario_retado, fecha_inicio_reto, 
 	    								unidad_id, puntaje_retador, puntaje_retado, timediff(fecha_fin_reto, 
 	    								fecha_inicio_reto) as tiempo_retador, timediff(fecha_fin_juego, fecha_inicio_juego) 
 	    								as tiempo_retado'))
 	    				->where(
 	    					[
-	    						['usuario_retador', '=', $user],
+	    						['id_reto', '=', $idreto],
 	    						['jugado', '=', 1]
 	    					]
 	    				)->get();
 
-	    for($i = 0; $i < count($getResumenReto); $i++) {
-	    	$retador 		= 	$getResumenReto[$i]->usuario_retador;
-		    $retado 		= 	$getResumenReto[$i]->usuario_retado;
-		    $fecha 			= 	$getResumenReto[$i]->fecha_inicio_reto;
-		    $idreto 		= 	$getResumenReto[$i]->id_reto;
-		    $unidadId 		= 	$getResumenReto[$i]->unidad_id;
-		    $pRetador 		= 	$getResumenReto[$i]->puntaje_retador;
-		    $pRetado 		= 	$getResumenReto[$i]->puntaje_retado;
-		    $timeRetador 	= 	$getResumenReto[$i]->tiempo_retador;
-		    $timeRetado 	= 	$getResumenReto[$i]->tiempoRetado;
+		    	$retador 		= 	$getResumenReto[$i]->usuario_retador;
+			    $retado 		= 	$getResumenReto[$i]->usuario_retado;
+			    $fecha 			= 	$getResumenReto[$i]->fecha_inicio_reto;
+			    $idreto 		= 	$getResumenReto[$i]->id_reto;
+			    $unidadId 		= 	$getResumenReto[$i]->unidad_id;
+			    $pRetador 		= 	$getResumenReto[$i]->puntaje_retador;
+			    $pRetado 		= 	$getResumenReto[$i]->puntaje_retado;
+			    $timeRetador 	= 	$getResumenReto[$i]->tiempo_retador;
+			    $timeRetado 	= 	$getResumenReto[$i]->tiempo_retado;
 
-		    MainModel::actualizaRanking($retador, $retado, $fecha, $idreto, $unidadId, $pRetador, $pRetado, $timeRetador, $timeRetado);
+			    MainModel::actualizaRanking($retador, $retado, $fecha, $idreto, $unidadId, $pRetador, $pRetado, $timeRetador, $timeRetado);
+	        }
 	    }
 	}
 
