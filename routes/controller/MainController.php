@@ -251,6 +251,7 @@ class MainController extends Controller {
         }
         // Create new SOAP client instance
         $client = new SoapClient($wsUrl, array('trace' => true, 'exceptions' => true));
+
         if (!$client) {
             error_log('Could not instanciate SOAP client with URL ' . $wsUrl);
             return false;
