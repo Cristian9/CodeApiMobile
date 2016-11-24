@@ -46,7 +46,7 @@ class MainModel extends Model {
 
 		$sqlUsuarios = "SELECT concat(firstname, ' ', lastname) as uname, nikname as usuario, username, image_avatar
 			from g_usuario where username <> '{$uname}' and active = 1 and (lastname like '%{$keywr}%' or firstname
-			like '%{$keywr}%') order by rand() LIMIT {$limit}, {$recs}";
+			like '%{$keywr}%' or username like '%{$keywr}%' or concat(firstname, ' ', lastname) like '%{$keywr}%') order by rand() LIMIT {$limit}, {$recs}";
 
 		return DB::select($sqlUsuarios);
 	}

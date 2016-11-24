@@ -40,15 +40,35 @@
 		echo $result;
 	}*/
 
-	class A{
-                function x(){echo "In A"; }
-        }
-        class B{
-                function getA() {
-                        return new A();
-                }
-        }
-        $b = new B();
+	class BaseMath{
 
-    $b->getA()->x();
+		private $suma;
+		private $resta;
+
+		function potencia($num, $exp) {
+			return pow($num, $exp);
+		}
+
+		function sumar($n1, $n2) {
+			$this->suma = $n1 + $n2;
+
+			return $this->suma;
+		}
+
+		function restar($n1, $n2) {
+			$this->resta = $n1 - $n2;
+
+			return $this->resta;
+		}
+    }
+    
+    class Math{
+    	function MathFunctions() {
+    		return new BaseMath();
+    	}
+    }
+
+    $math = new Math();
+
+    echo $math->MathFunctions()->potencia(10, 2);
 ?>

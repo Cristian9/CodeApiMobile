@@ -26,15 +26,16 @@ class MainController extends Controller {
 		$uname = $request->getParam('user');
 		$passw = $request->getParam('pass');
 
-		/*$wsUrl = 'http://10.31.1.223:8051/ServiceAD.asmx?WSDL';
-	    $isValid = MainController::loginWSAuthenticate($uname, $passw, $wsUrl);*/
+	    $wsUrl = 'http://10.31.1.223:8051/ServiceAD.asmx?WSDL';
+	    $isValid = MainController::loginWSAuthenticate($uname, $passw, $wsUrl);
 
-	    $isValid = 1;
-
+	   // $isValid = 1;
 	    if ($isValid) {
 	        $user = MainModel::login($uname);
 			echo json_encode($user);
-	    }
+	    } else {
+			echo $isValid;
+		}
 	}
 
 	public function listarCursos($request, $response) {
@@ -73,7 +74,6 @@ class MainController extends Controller {
 		$page = $request->getParam('page');
 
 		$retos = MainModel::listaRetos($args, $get, $id, $page);
-
 		echo json_encode($retos);
 	}
 
@@ -245,15 +245,17 @@ class MainController extends Controller {
 	}
 
 	public function loginWSAuthenticate($username, $password, $wsUrl) {
+	
         // check params
         if (empty($username) or empty($password) or empty($wsUrl)) {
             return false;
         }
         // Create new SOAP client instance
+		
         $client = new SoapClient($wsUrl, array('trace' => true, 'exceptions' => true));
-
+		
         if (!$client) {
-            error_log('Could not instanciate SOAP client with URL ' . $wsUrl);
+            die('Could not instanciate SOAP client with URL ' . $wsUrl);
             return false;
         }
         // Include phpseclib methods, because of a bug with AES/CFB in mcrypt
@@ -270,9 +272,9 @@ class MainController extends Controller {
         $cipher->setKeyLength(128);
         $cipher->setKey($key);
         $cipher->setIV($key);
-
+		
         $cipheredPass = $cipher->encrypt($password);
-
+		
         // Mcrypt call left for documentation purposes - broken, see https://bugs.php.net/bug.php?id=51146
         //$cipheredPass = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $password,  MCRYPT_MODE_CFB, $key);
         // Following lines present for debug purposes only
@@ -288,7 +290,6 @@ class MainController extends Controller {
         // The call to the webservice will change depending on your definition
         try {
             $response = $client->validaUsuarioAD(array('usuario' => $username, 'contrasenia' => $passCrypted, 'sistema' => 'desafioutp'));
-
         } catch (SoapFault $fault) {
             error_log('Caught something');
             if ($fault->faultstring != 'Could not connect to host') {
