@@ -26,10 +26,10 @@ class MainController extends Controller {
 		$uname = $request->getParam('user');
 		$passw = $request->getParam('pass');
 
-	    $wsUrl = 'http://10.31.1.223:8051/ServiceAD.asmx?WSDL';
-	    $isValid = MainController::loginWSAuthenticate($uname, $passw, $wsUrl);
+	    //$wsUrl = 'http://10.31.1.223:8051/ServiceAD.asmx?WSDL';
+	    //$isValid = MainController::loginWSAuthenticate($uname, $passw, $wsUrl);
 
-	   // $isValid = 1;
+	   	$isValid = 1;
 	    if ($isValid) {
 	        $user = MainModel::login($uname);
 			echo json_encode($user);
@@ -235,7 +235,6 @@ class MainController extends Controller {
 		$firstname = $request->getParam('firstname');
 		$lastname = $request->getParam('lastname');
 		$username = $request->getParam('username');
-		$password = $request->getParam('password');
 		$nikname = $request->getParam('nikname');
 		$email = $request->getParam('email');
 

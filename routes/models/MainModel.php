@@ -46,7 +46,8 @@ class MainModel extends Model {
 
 		$sqlUsuarios = "SELECT concat(firstname, ' ', lastname) as uname, nikname as usuario, username, image_avatar
 			from g_usuario where username <> '{$uname}' and active = 1 and (lastname like '%{$keywr}%' or firstname
-			like '%{$keywr}%' or username like '%{$keywr}%' or concat(firstname, ' ', lastname) like '%{$keywr}%') order by rand() LIMIT {$limit}, {$recs}";
+			like '%{$keywr}%' or nikname like '%{$keywr}%' or username like '%{$keywr}%' or concat(firstname, ' ', lastname) 
+			like '%{$keywr}%') order by rand() LIMIT {$limit}, {$recs}";
 
 		return DB::select($sqlUsuarios);
 	}
@@ -606,11 +607,11 @@ class MainModel extends Model {
 	    return $result;
 	}
 
-	public function newUser($firstname, $lastname, $username, $password, $nikname, $email){
+	public function newUser($firstname, $lastname, $username, $nikname, $email){
 		$pass = sha1($password);
 		$hoy = date('Y-m-d H:i:s');
 
-		$newUser = DB::insert("INSERT INTO g_usuario (firstname, lastname, username, password, nikname,
+		$newUser = DB::insert("INSERT INTO g_usuario (firstname, lastname, username, nikname,
 					email, fecha_registro, creator_id, image_avatar, active)
 					values ('{$firstname}', '{$lastname}', '{$username}', '{$pass}',
 					'{$nikname}', '{$email}', '{$hoy}', '1', 'default', '1')");
