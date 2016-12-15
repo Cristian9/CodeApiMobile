@@ -6,6 +6,8 @@ namespace Routes\Controller;
 use Routes\Models\MainModel;
 use SoapClient;
 use Routes\Controller\phpseclib\Crypt\Crypt_AES;
+use Routes\Controller\phpmailer\PHPMailer;
+use Routes\Controller\phpmailer\SMTP;
 
 class MainController extends Controller {
 
@@ -61,7 +63,7 @@ class MainController extends Controller {
 		$uname = $request->getParam('username');
 		$keywr = $request->getParam('keywords');
 
-		$usuarios = MainModel::listaUsuarios($page, $recs, $uname, $keywr);
+		$usuarios = MainModel::listaUsuarios($page, $recs, $uname, $keywr, $course);
 
 		echo json_encode($usuarios);
 	}
@@ -156,7 +158,7 @@ class MainController extends Controller {
 
 	    $result = MainModel::actualizaRetos($cancelled, $ujugador, $countCorrect, $idQuestion, $fecha_fin);
 
-	    print_r($result);
+	    echo json_encode($result);
 	}
 
 	public function UpdateFechaRetos($request, $response) {
@@ -231,6 +233,12 @@ class MainController extends Controller {
 	    echo json_encode($json);
 	}
 
+	public function delete($request, $response) {
+		$id_reto = $request->getParam('id_reto');
+
+		$res = MainModel::delete($id_reto);
+	}
+
 	public function newUser($request, $response) {
 		$firstname = $request->getParam('firstname');
 		$lastname = $request->getParam('lastname');
@@ -241,6 +249,46 @@ class MainController extends Controller {
 		$result = MainModel::newUser($firstname, $lastname, $username, $password, $nikname, $email);
 
 		echo $result;
+	}
+
+	public function sendMail($request, $response) {
+		$email = $request->getParam('email');
+		$nombre = $request->getParam('nombre');
+		$remitente = $request->getParam('remitente');
+
+		$mensaje = file_get_contents('../routes/controller/phpMailer/template.html');
+
+		$mail = new PHPMailer();
+		$mail->IsSMTP();
+		$mail->SMTPAuth = true;
+		$mail->SMTPSecure = "ssl";
+		$mail->Host = "smtp.gmail.com";
+		$mail->Port = 465;
+		$mail->Username = "dtautp@gmail.com";
+		$mail->Password = "direccionta";
+		$mail->From = "dtautp@gmail.com";
+
+		$mail->FromName = 'Desafío UTP';
+
+		$mail->Subject = 'El nuevo juego app móvil de la UTP';
+
+		$itemTemplate = ['{nombre}', '{remitente}'];
+
+		$itemValue = [$nombre, $remitente];
+
+		$template = str_replace($itemTemplate, $itemValue, $mensaje);
+
+		$mail->MsgHTML($template);
+
+		$mail->AddAddress('ctapia@grupoutp.edu.pe');
+
+		$mail->IsHTML(true);
+
+		if($mail->Send()) {
+			return $email;
+		} else {
+			return $mail->ErrorInfo;
+		}
 	}
 
 	public function loginWSAuthenticate($username, $password, $wsUrl) {
