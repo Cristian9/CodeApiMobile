@@ -285,6 +285,7 @@ class MainModel extends Model {
 	    				->update(
 	    					[
 	    						'correctas_retado' => $countCorrect,
+	    						'puntaje_retado' => $countCorrect,
 	    						'fecha_fin_juego' => $fecha_fin,
 	    						'jugado' => 1
 	    					]
@@ -296,12 +297,15 @@ class MainModel extends Model {
 	    				->update(
 	    					[
 	    						'correctas_retador' => $countCorrect,
+	    						'puntaje_retador' => $countCorrect,
 	    						'fecha_fin_reto' => $fecha_fin
 	    					]
 	    				);
 	    	}
 
-	    	if($sqlUpdate && $uRetado == $ujugador) {
+	    	return $sqlUpdate;
+
+	    	/*if($sqlUpdate && $uRetado == $ujugador) {
 
 	    		$queryRecordRate = DB::table('g_reto')
 	    							->select(DB::raw('if(timediff(fecha_fin_reto, fecha_inicio_reto) <= 0, 0, 
@@ -388,7 +392,7 @@ class MainModel extends Model {
 	            return $sqlUpdatePuntos;
 	    	} else {
 	    		return $sqlUpdate;
-	    	}
+	    	}*/
 
 	    } else {
 
@@ -402,39 +406,40 @@ class MainModel extends Model {
     								['year', '=', $anio],
     								['month', '=', $month]
     							]
-    						)
-    						->get();
+    						)->get();
 
-    		if(!empty($sqlRanking)) {
+    		if(!empty($sqlRanking[0])) {
 
     			$id = $sqlRanking[0]->id_ranking;
 
     			$sqlRestaPuntajeRanking = "UPDATE g_ranking set puntaje = if((puntaje - 3) < 0, 0, (puntaje - 3)) where id_ranking = '{$id}'";
 
+    			$sqlUpdateCancelled = DB::update($sqlRestaPuntajeRanking);
+
     			if($uRetado == $ujugador) {
 
-    				$queryRecordRate = DB::table('g_reto')
+    				/*$queryRecordRate = DB::table('g_reto')
     									->select(DB::raw('timediff(fecha_fin_reto, fecha_inicio_reto) as tiempo_retador'))
-    									->where('id_reto', '=', $idQuestion)->get();
+    									->where('id_reto', '=', $idQuestion)->get();*/
 
     				$sqlUpdateCancelled = DB::table('g_reto')
     									->where('id_reto', $idQuestion)
     									->update(
     										[
-    											'puntaje_retador' => 5,
+    											//'puntaje_retador' => 5,
     											'puntaje_retado' => 0,
     											'fecha_fin_juego' => $fecha_fin,
     											'jugado' => 1
     										]
     									);
 
-    				$sqlUpdateCancelled = DB::update($sqlRestaPuntajeRanking);
+    				//$sqlUpdateCancelled = DB::update($sqlRestaPuntajeRanking);
     			} else {
 
-    				if ($sqlRanking[0]->year == $anio && $sqlRanking[0]->month == $month) {
+    				//if ($sqlRanking[0]->year == $anio && $sqlRanking[0]->month == $month) {
 
-    					$sqlUpdateCancelled = DB::update($sqlRestaPuntajeRanking);
-    				}
+    					//$sqlUpdateCancelled = DB::update($sqlRestaPuntajeRanking);
+    				//}
 
     				DB::table('g_reto')->where('id_reto', '=', $idQuestion)->delete();
     			}
