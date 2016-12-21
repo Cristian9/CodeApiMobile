@@ -20,6 +20,6 @@ $app->post("/update_retos/", 'MainController:actualizaRetos');
 $app->post("/updateDateReto/", 'MainController:UpdateFechaRetos');
 $app->post("/change_nick/", 'MainController:ActualizaUsuario');
 $app->post("/registerDevice/", 'MainController:InsertaCodeDispositivo');
-$app->post("/new-user/", 'MainController:newUser');
 $app->post("/delete/", "MainController:delete");
 $app->post("/sendMail/", "MainController:sendMail");
+$app->post("/new-user/", 'MainController:newUser');

@@ -222,7 +222,7 @@ class MainModel extends Model {
 	}
 
 	public function rankingMensual($course, $year, $month) {
-		 $sqlRanking = "SELECT u.nikname, u.image_avatar, r.* from g_ranking r, g_usuario u where u.username = r.usuario_id
+		$sqlRanking = "SELECT u.nikname, u.image_avatar, r.* from g_ranking r, g_usuario u where u.username = r.usuario_id
 		 	and r.curso_id = '{$course}' and r.year = '{$year}' and r.month = '{$month}' order by r.puntaje desc,
 		 	r.tiempo_jugado desc";
 
@@ -405,7 +405,7 @@ class MainModel extends Model {
     						)
     						->get();
 
-    		if(!empty($sqlRanking)) {
+    		if(!empty($sqlRanking[0])) {
 
     			$id = $sqlRanking[0]->id_ranking;
 
@@ -438,6 +438,10 @@ class MainModel extends Model {
 
     				DB::table('g_reto')->where('id_reto', '=', $idQuestion)->delete();
     			}
+
+    			return $sqlUpdateCancelled;
+    		} else {
+    			return 1;
     		}
 	    }
 	}
@@ -555,13 +559,29 @@ class MainModel extends Model {
 	}
 
 	public function InsertaCodeDispositivo($userid, $identifier) {
-		$UpdDevice = DB::table('g_usuario')
+
+		$isnewuser = DB::table('g_usuario')
+					->select('device_notification_id')
+					->where('usuario_id', '=', $userid)->get();
+
+		if($isnewuser[0]->device_notification_id == "") {
+			$UpdDevice = DB::table('g_usuario')
+					->where('usuario_id', $userid)
+					->update(
+						[
+							'device_notification_id' => $identifier,
+							'fecha_registro' => date('Y-m-d H:i:s')
+						]
+					);
+		} else {
+			$UpdDevice = DB::table('g_usuario')
 					->where('usuario_id', $userid)
 					->update(
 						[
 							'device_notification_id' => $identifier
 						]
 					);
+		}
 
 		return $UpdDevice;
 	}
@@ -580,14 +600,13 @@ class MainModel extends Model {
 		$user = DB::table('g_usuario')
 				->select('firstname', 'device_notification_id')
 				->where('username', '=', $toUser)->get();
-
-
+		
 		$key = $user[0]->device_notification_id;
 		$username = $user[0]->firstname;
 
 		$to = $key;
 	    $title = "{$fromUser} te ha retado!!!";
-	    $message = "{$username}, acepta el desafío y vencelo!!!";
+	    $message = "{$username}, acepta el desafío y véncelo!!!";
 
 	    $registrationId = array($to);
 	    $msg = array(
@@ -621,14 +640,8 @@ class MainModel extends Model {
 	}
 
 	public function newUser($firstname, $lastname, $username, $nikname, $email){
-		$pass = sha1($password);
-		$hoy = date('Y-m-d H:i:s');
-
-		$newUser = DB::insert("INSERT INTO g_usuario (firstname, lastname, username, nikname,
-					email, fecha_registro, creator_id, image_avatar, active)
-					values ('{$firstname}', '{$lastname}', '{$username}', '{$pass}',
-					'{$nikname}', '{$email}', '{$hoy}', '1', 'default', '1')");
+		$newUser = DB::insert("INSERT INTO g_usuario (firstname, lastname, username, nikname, email, creator_id, image_avatar, active)
+					values ('{$firstname}', '{$lastname}', '{$username}', '{$nikname}', '{$email}', '1', 'default', '1')");
 		return $newUser;
 	}
-
 }

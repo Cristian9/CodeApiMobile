@@ -32,9 +32,14 @@ class MainController extends Controller {
 	    //$isValid = MainController::loginWSAuthenticate($uname, $passw, $wsUrl);
 
 	   	$isValid = 1;
+
 	    if ($isValid) {
 	        $user = MainModel::login($uname);
-			echo json_encode($user);
+
+	        if(!empty($user[0])) {
+	        	echo json_encode($user);
+	        }
+
 	    } else {
 			echo $isValid;
 		}
@@ -285,7 +290,7 @@ class MainController extends Controller {
 		$mail->IsHTML(true);
 
 		if($mail->Send()) {
-			return $email;
+			return 'ok';
 		} else {
 			return $mail->ErrorInfo;
 		}
