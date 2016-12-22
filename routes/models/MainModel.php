@@ -72,12 +72,15 @@ class MainModel extends Model {
 	                    as avatar, time_format(timediff(r.fecha_inicio_reto + interval 1 day, now()), concat('%H', 'h', ':', '%i', 'm')) as
 	                    para_perder from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 0";
 
-	            $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen, if(r.puntaje_retador >
-	                r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where r.usuario_retado = u.username
-	                and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador as usuario,
-	                u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado
-	                from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1
-	                order by id_reto desc limit 0, 10";
+	            $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen, 
+	            		if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', if(r.puntaje_retador = r.puntaje_retado, 'Has empatado', 
+	            		'Has perdido')) as resultado from g_reto r, g_usuario u where r.usuario_retado = u.username and 
+	            		r.usuario_retador = '{$user}' and r.jugado = 1 
+	            		union 
+	            		select r.id_reto, r.usuario_retador as usuario, u.nikname, u.image_avatar, 'Recibido' as origen, 
+	            		if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', if(r.puntaje_retado = r.puntaje_retador, 'Has empatado', 
+	            		'Has perdido')) as resultado from g_reto r, g_usuario u where r.usuario_retador = u.username and 
+	            		r.usuario_retado = '{$user}' and r.jugado = 1 order by id_reto desc limit 0, 10";
 
 	            $json->Enviado = DB::select($sqlRetosEnviados);
 	            $json->Recibido = DB::select($sqlRetosRecibidos);
@@ -97,11 +100,15 @@ class MainModel extends Model {
 	            }
 
 	            $sqlRetosHistorial = "SELECT r.id_reto, r.usuario_retado as usuario, u.nikname, u.image_avatar, 'Enviado' as origen,
-	            	if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado from g_reto r, g_usuario u where
-	            	r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 1 union select r.id_reto, r.usuario_retador
-	            	as usuario, u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido')
-	                as resultado from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1
-	                order by id_reto desc limit {$limite}, 10";
+	            	if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', if(r.puntaje_retador = r.puntaje_retado, 'Has empatado', 
+	            	'Has perdido')) as resultado from g_reto r, g_usuario u where r.usuario_retado = u.username and 
+	            	r.usuario_retador = '{$user}' and r.jugado = 1 
+	            	union 
+	            	select r.id_reto, r.usuario_retador
+	            	as usuario, u.nikname, u.image_avatar, 'Recibido' as origen, if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 
+	            	if(r.puntaje_retado = r.puntaje_retador, 'Has empatado', 'Has perdido')) as resultado from g_reto r, g_usuario u 
+	            	where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 
+	            	order by id_reto desc limit {$limite}, 10";
 
 	            $json->Historial = DB::select($sqlRetosHistorial);
 	            break;
@@ -109,19 +116,21 @@ class MainModel extends Model {
 			default:
 				$sqlDetalle = "SELECT r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, (select image_avatar
 		            from g_usuario where username = '{$user}') as myAvatar, r.usuario_retado as rival, u.nikname, u.image_avatar, 'Enviado'
-		            as origen, if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', 'Has perdido') as resultado, r.correctas_retador as
-		            mis_correctas, r.puntaje_retador as mi_punto, r.correctas_retado as correctas_rival, r.puntaje_retado as punto_rival,
-		            time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as miTiempo, time_format(timediff
-		            (r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) as tiempoRival from g_reto r, g_usuario u
-		             where r.usuario_retado = u.username and r.usuario_retador = '{$user}' and r.jugado = 1 and r.id_reto = {$id}
+		            as origen, if(r.puntaje_retador > r.puntaje_retado, 'Has ganado', if(r.puntaje_retador = r.puntaje_retado , 'Has empatado', 
+		            'Has perdido')) as resultado, r.correctas_retador as mis_correctas, r.puntaje_retador as mi_punto, r.correctas_retado 
+		            as correctas_rival, r.puntaje_retado as punto_rival, time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), 
+		            concat('%i', 'm ', '%s', 's')) as miTiempo, time_format(timediff(r.fecha_fin_juego, r.fecha_inicio_juego), 
+		            concat('%i', 'm ', '%s', 's')) as tiempoRival from g_reto r, g_usuario u where r.usuario_retado = u.username and 
+		            r.usuario_retador = '{$user}' and r.jugado = 1 and r.id_reto = {$id}
 		            union
 		            select r.id_reto, (select nikname from g_usuario where username = '{$user}') as myNik, (select image_avatar from g_usuario
 		            where username = '{$user}') as myAvatar, r.usuario_retador as rival, u.nikname, u.image_avatar, 'Recibido' as origen,
-		            if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', 'Has perdido') as resultado, r.correctas_retado as mis_correctas,
-		            r.puntaje_retado as mi_punto, r.correctas_retador as correctas_retado, r.puntaje_retador as punto_rival, time_format(timediff
-		            (r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) as miTiempo, time_format(timediff(r.fecha_fin_reto,
-		            r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as tiempoRival from g_reto r, g_usuario u where r.usuario_retador =
-		            u.username and r.usuario_retado = '{$user}' and r.jugado = 1 and r.id_reto = {$id} order by id_reto";
+		            if(r.puntaje_retado > r.puntaje_retador, 'Has ganado', if(r.puntaje_retado = r.puntaje_retador, 'Has empatado', 'Has perdido')) 
+		            as resultado, r.correctas_retado as mis_correctas, r.puntaje_retado as mi_punto, r.correctas_retador as correctas_retado, 
+		        	r.puntaje_retador as punto_rival, time_format(timediff(r.fecha_fin_juego, r.fecha_inicio_juego), concat('%i', 'm ', '%s', 's')) 
+		        	as miTiempo, time_format(timediff(r.fecha_fin_reto, r.fecha_inicio_reto), concat('%i', 'm ', '%s', 's')) as tiempoRival 
+		        	from g_reto r, g_usuario u where r.usuario_retador = u.username and r.usuario_retado = '{$user}' and r.jugado = 1 and 
+		        	r.id_reto = {$id} order by id_reto";
 
 	            $json->Detalle = DB::select($sqlDetalle);
 	            break;
