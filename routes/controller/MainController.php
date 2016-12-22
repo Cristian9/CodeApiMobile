@@ -280,7 +280,7 @@ class MainController extends Controller {
 
 		$mail->MsgHTML($template);
 
-		$mail->AddAddress('ctapia@grupoutp.edu.pe');
+		$mail->AddAddress('lloza@grupoutp.edu.pe');
 
 		$mail->IsHTML(true);
 
